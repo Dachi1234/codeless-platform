@@ -1,5 +1,6 @@
 package com.codeless.backend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    
+    @Value("${cors.allowed-origins:http://localhost:4200}")
+    private String allowedOrigins;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
@@ -38,7 +42,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(request -> {
                 var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(java.util.List.of("http://localhost:4200"));
+                corsConfig.setAllowedOrigins(java.util.Arrays.asList(allowedOrigins.split(",")));
                 corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfig.setAllowedHeaders(java.util.List.of("*"));
                 corsConfig.setAllowCredentials(true);
