@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { CartService, CartItem } from '../../services/cart.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -507,6 +508,7 @@ import { AuthService } from '../../services/auth.service';
   `
 })
 export class CheckoutComponent implements OnInit {
+  private readonly http = inject(HttpClient);
   private readonly cartService = inject(CartService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -563,76 +565,47 @@ export class CheckoutComponent implements OnInit {
     };
 
     // Call backend to create order and get PayPal order ID
-    fetch('http://localhost:8080/api/checkout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    this.http.post<any>('/api/checkout', checkoutRequest).subscribe({
+      next: (data) => {
+        console.log('Order created successfully:', data);
+        // For demo: Simulate successful payment and call capture
+        // In production, integrate PayPal buttons SDK
+        this.capturePayment(data.paypalOrderId);
       },
-      body: JSON.stringify(checkoutRequest)
-    })
-    .then(async res => {
-      console.log('Checkout response status:', res.status);
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: 'Unknown error' }));
-        console.error('Checkout error response:', error);
-        throw new Error(error.message || `Failed to create order (${res.status})`);
+      error: (err) => {
+        this.isProcessing = false;
+        this.errorMessage = err.error?.message || 'Failed to create order. Please try again.';
+        console.error('Checkout error:', err);
       }
-      return res.json();
-    })
-    .then(data => {
-      console.log('Order created successfully:', data);
-      
-      // For demo: Simulate successful payment and call capture
-      // In production, integrate PayPal buttons SDK
-      this.capturePayment(data.paypalOrderId);
-    })
-    .catch(err => {
-      this.isProcessing = false;
-      this.errorMessage = err.message || 'Failed to create order. Please try again.';
-      console.error('Checkout error:', err);
     });
   }
 
   private capturePayment(paypalOrderId: string): void {
     // Call backend to capture payment
-    fetch('http://localhost:8080/api/checkout/capture', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+    this.http.post<any>('/api/checkout/capture', { paypalOrderId }).subscribe({
+      next: (data) => {
+        console.log('Payment captured:', data);
+        
+        // Clear cart
+        this.cartService.clearCart().subscribe({
+          next: () => {
+            this.isProcessing = false;
+            // Navigate to my courses with success message
+            this.router.navigate(['/my-courses'], {
+              queryParams: { orderSuccess: 'true' }
+            });
+          },
+          error: (err) => {
+            this.isProcessing = false;
+            this.errorMessage = 'Order completed but failed to clear cart.';
+          }
+        });
       },
-      body: JSON.stringify({ paypalOrderId })
-    })
-    .then(async res => {
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Payment capture failed');
+      error: (err) => {
+        this.isProcessing = false;
+        this.errorMessage = err.error?.message || 'Payment failed. Please try again.';
+        console.error('Capture error:', err);
       }
-      return res.json();
-    })
-    .then(data => {
-      console.log('Payment captured:', data);
-      
-      // Clear cart
-      this.cartService.clearCart().subscribe({
-        next: () => {
-          this.isProcessing = false;
-          // Navigate to my courses with success message
-          this.router.navigate(['/my-courses'], {
-            queryParams: { orderSuccess: 'true' }
-          });
-        },
-        error: (err) => {
-          this.isProcessing = false;
-          this.errorMessage = 'Order completed but failed to clear cart.';
-        }
-      });
-    })
-    .catch(err => {
-      this.isProcessing = false;
-      this.errorMessage = err.message || 'Payment failed. Please try again.';
-      console.error('Capture error:', err);
     });
   }
 }
