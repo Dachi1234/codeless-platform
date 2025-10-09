@@ -1,0 +1,214 @@
+<div class="dashboard-page">
+  <div class="container">
+    <!-- Back to Home -->
+    <a routerLink="/home" class="back-link">
+      <span class="back-arrow">←</span> Back to Home
+    </a>
+
+    <h1 class="page-title">Personal Learning Dashboard</h1>
+    <p class="page-subtitle">Track your progress and continue your learning journey</p>
+
+    <div class="dashboard-layout" *ngIf="!loading && stats">
+      <!-- Left Column - Profile & Sidebar -->
+      <aside class="dashboard-sidebar">
+        <!-- Profile Card -->
+        <div class="profile-card">
+          <img src="https://ui-avatars.com/api/?name=John+Doe&size=120&background=FD8D6E&color=fff" 
+               alt="Profile" 
+               class="profile-avatar">
+          <h3 class="profile-name">John Doe</h3>
+          <p class="profile-email">john.doe&#64;example.com</p>
+          <button class="btn-edit-profile">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Edit Profile
+          </button>
+        </div>
+
+        <!-- Completion Rate -->
+        <div class="completion-card">
+          <h4>Completion Rate</h4>
+          <div class="completion-circle">
+            <span class="completion-percent">{{ getCompletionRate() }}%</span>
+          </div>
+          <div class="completion-bar">
+            <div class="completion-fill" [style.width.%]="getCompletionRate()"></div>
+          </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="achievements-card" *ngIf="achievements.length > 0">
+          <h4>Achievements</h4>
+          <div class="achievement-badges">
+            <div class="achievement-badge" *ngFor="let achievement of achievements" [title]="achievement.name">
+              {{ getAchievementEmoji(achievement.iconName) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Sessions -->
+        <div class="upcoming-card">
+          <h4>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Upcoming Sessions
+          </h4>
+          <p class="no-sessions">No upcoming live sessions</p>
+        </div>
+      </aside>
+
+      <!-- Right Column - Stats & Courses -->
+      <main class="dashboard-main">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5V9M20 17V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5V9M20 17v5M4 9h16" stroke="#5A8DEE" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Total Courses</div>
+              <div class="stat-value">{{ stats.totalCourses }}</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon stat-icon-success">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Completed</div>
+              <div class="stat-value">{{ stats.completedCourses }}</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon stat-icon-time">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#9B59B6" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke="#9B59B6" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Learning Time</div>
+              <div class="stat-value">{{ stats.learningTimeHours }}h</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon stat-icon-streak">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2c-1.5 3-3 8-3 11a3 3 0 0 0 6 0c0-3-1.5-8-3-11z" fill="#FF6B6B" stroke="#FF6B6B" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="stat-content">
+              <div class="stat-label">Learning Streak</div>
+              <div class="stat-value">{{ stats.currentStreak }} days</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Course Progress Tabs -->
+        <div class="course-tabs">
+          <button class="tab-btn" 
+                  [class.active]="activeTab === 'in-progress'"
+                  (click)="setActiveTab('in-progress')">
+            In Progress ({{ getInProgressCount() }})
+          </button>
+          <button class="tab-btn" 
+                  [class.active]="activeTab === 'completed'"
+                  (click)="setActiveTab('completed')">
+            Completed ({{ stats.completedCourses }})
+          </button>
+          <button class="tab-btn" 
+                  [class.active]="activeTab === 'all'"
+                  (click)="setActiveTab('all')">
+            All Courses ({{ stats.totalCourses }})
+          </button>
+        </div>
+
+        <!-- Course Cards -->
+        <div class="course-list">
+          <div class="course-progress-card" *ngFor="let progress of getFilteredCourses()">
+            <img [src]="progress.course.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=120&h=80&fit=crop'" 
+                 [alt]="progress.course.title"
+                 class="course-thumbnail">
+            
+            <div class="course-info">
+              <h3 class="course-title">{{ progress.course.title }}</h3>
+              <p class="course-instructor">{{ progress.course.instructorName || 'TBD' }}</p>
+              
+              <div class="course-meta">
+                <span class="meta-badge" [class]="'badge-' + (progress.course.kind?.toLowerCase() || 'default')">
+                  {{ progress.course.kind || 'N/A' }}
+                </span>
+                <span class="meta-item" *ngIf="progress.course.level">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  {{ progress.course.level }}
+                </span>
+                <span class="meta-item meta-rating" *ngIf="progress.course.rating">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FFD95A" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  {{ progress.course.rating }}
+                </span>
+              </div>
+
+              <div class="progress-section">
+                <div class="progress-header">
+                  <span class="progress-text">
+                    Progress: {{ progress.lessonCompleted }}/{{ progress.lessonTotal }} lessons
+                  </span>
+                  <span class="progress-percent">{{ progress.completionPercentage }}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="progress.completionPercentage"></div>
+                </div>
+                <div class="progress-footer">
+                  <span class="time-spent">{{ progress.timeSpentSeconds > 0 ? formatTimeSpent(progress.timeSpentSeconds) : 'Not started yet' }}</span>
+                  <span class="last-active">{{ progress.lastAccessedAt ? ('Last active: ' + (progress.lastAccessedAt | date:'M/d/yyyy')) : ('Enrolled: ' + (progress.enrolledAt | date:'M/d/yyyy')) }}</span>
+                </div>
+              </div>
+
+              <div class="next-session" *ngIf="progress.course.kind === 'LIVE' && progress.course.startDate">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                  <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Starts: {{ progress.course.startDate | date:'M/d/yyyy' }}
+              </div>
+            </div>
+
+            <div class="course-actions">
+              <button class="btn-continue" [routerLink]="['/courses', progress.course.id, 'learn']">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/>
+                </svg>
+                Continue Learning
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-courses" *ngIf="coursesWithProgress.length === 0">
+            <p>No enrolled courses yet</p>
+            <a routerLink="/courses" class="btn-browse">Browse Courses</a>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="loading" *ngIf="loading">
+      <p>Loading your dashboard...</p>
+    </div>
+  </div>
+</div>
+

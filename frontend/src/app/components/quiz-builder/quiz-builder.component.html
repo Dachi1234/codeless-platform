@@ -1,0 +1,301 @@
+<div class="modal-overlay">
+  <div class="modal-container modal-extra-large">
+    <div class="modal-header">
+      <h2>Quiz Builder</h2>
+      <button class="close-btn" (click)="closeBuilder()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      @if (error) {
+        <div class="error-message">{{ error }}</div>
+      }
+
+      @if (loading) {
+        <div class="loading">Loading quiz...</div>
+      } @else {
+        <!-- Quiz Settings -->
+        <div class="quiz-settings">
+          <h3>Quiz Settings</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Title *</label>
+              <input 
+                type="text" 
+                [(ngModel)]="quizForm.title" 
+                placeholder="Quiz Title"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Passing Score (%)</label>
+              <input 
+                type="number" 
+                [(ngModel)]="quizForm.passingScore" 
+                min="0" 
+                max="100"
+                placeholder="70"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label>Description</label>
+              <textarea 
+                [(ngModel)]="quizForm.description" 
+                rows="3"
+                placeholder="Quiz description..."
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Time Limit (minutes)</label>
+              <input 
+                type="number" 
+                [(ngModel)]="quizForm.timeLimitMinutes" 
+                min="1"
+                placeholder="No limit"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Max Attempts</label>
+              <input 
+                type="number" 
+                [(ngModel)]="quizForm.maxAttempts" 
+                min="1"
+                placeholder="Unlimited"
+              />
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input 
+                  type="checkbox" 
+                  [(ngModel)]="quizForm.randomizeQuestions"
+                />
+                Randomize Questions
+              </label>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <label>
+                <input 
+                  type="checkbox" 
+                  [(ngModel)]="quizForm.showFeedbackImmediately"
+                />
+                Show Feedback Immediately
+              </label>
+            </div>
+          </div>
+
+          <button 
+            class="btn btn-primary" 
+            (click)="saveQuiz()"
+            [disabled]="saving || !quizForm.title"
+          >
+            {{ saving ? 'Saving...' : (quiz ? 'Update Quiz Settings' : 'Create Quiz') }}
+          </button>
+        </div>
+
+        <!-- Questions Section -->
+        @if (quiz?.id) {
+          <div class="questions-section">
+            <div class="section-header">
+              <h3>Questions ({{ questions.length }})</h3>
+              <button class="btn btn-success" (click)="openQuestionModal()">
+                + Add Question
+              </button>
+            </div>
+
+            @if (questions.length === 0) {
+              <div class="empty-state">
+                <p>No questions yet. Click "Add Question" to get started.</p>
+              </div>
+            } @else {
+              <div class="questions-list">
+                @for (question of questions; track question.id) {
+                  <div class="question-card">
+                    <div class="question-header">
+                      <span class="question-number">Q{{ question.questionOrder }}</span>
+                      <span class="question-type-badge">{{ question.questionType }}</span>
+                      <span class="question-points">{{ question.points }} pts</span>
+                      <div class="question-actions">
+                        <button 
+                          class="btn-icon" 
+                          (click)="openQuestionModal(question)"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          class="btn-icon" 
+                          (click)="deleteQuestion(question)"
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div class="question-content">
+                      <p class="question-text">{{ question.questionText }}</p>
+                      
+                      @if (question.answerOptions && question.answerOptions.length > 0) {
+                        <div class="answer-options">
+                          @for (option of question.answerOptions; track option.id) {
+                            <div class="answer-option" [class.correct]="option.isCorrect">
+                              <span class="option-marker">
+                                {{ option.isCorrect ? '✓' : '○' }}
+                              </span>
+                              <span>{{ option.optionText }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+
+                      @if (question.explanation) {
+                        <div class="question-explanation">
+                          <strong>Explanation:</strong> {{ question.explanation }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="info-box">
+            <p>💡 Please save quiz settings first before adding questions.</p>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeBuilder()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Question Modal -->
+@if (showQuestionModal) {
+  <div class="modal-overlay">
+    <div class="modal-container modal-large">
+      <div class="modal-header">
+        <h2>{{ editingQuestion ? 'Edit Question' : 'Add Question' }}</h2>
+        <button class="close-btn" (click)="closeQuestionModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Question Type *</label>
+            <select 
+              [(ngModel)]="questionForm.questionType"
+              (ngModelChange)="onQuestionTypeChange()"
+              required
+            >
+              @for (type of questionTypes; track type.value) {
+                <option [value]="type.value">{{ type.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Points</label>
+            <input 
+              type="number" 
+              [(ngModel)]="questionForm.points" 
+              min="1"
+              required
+            />
+          </div>
+
+          <div class="form-group full-width">
+            <label>Question Text *</label>
+            <textarea 
+              [(ngModel)]="questionForm.questionText" 
+              rows="3"
+              placeholder="Enter your question..."
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Explanation (shown after answer)</label>
+            <textarea 
+              [(ngModel)]="questionForm.explanation" 
+              rows="2"
+              placeholder="Optional explanation..."
+            ></textarea>
+          </div>
+
+          <!-- Answer Options -->
+          @if (needsAnswerOptions()) {
+            <div class="form-group full-width">
+              <div class="options-header">
+                <label>Answer Options *</label>
+                @if (questionForm.questionType === 'MULTIPLE_CHOICE') {
+                  <button 
+                    class="btn btn-sm btn-success" 
+                    (click)="addAnswerOption()"
+                  >
+                    + Add Option
+                  </button>
+                }
+              </div>
+
+              <div class="answer-options-list">
+                @for (option of questionForm.answerOptions; track $index; let i = $index) {
+                  <div class="answer-option-item">
+                    <label class="radio-label">
+                      <input 
+                        type="radio" 
+                        [name]="'correct-' + i"
+                        [checked]="option.isCorrect"
+                        (change)="setCorrectAnswer(i)"
+                      />
+                      <span class="correct-indicator">Correct</span>
+                    </label>
+
+                    <input 
+                      type="text" 
+                      [(ngModel)]="option.optionText"
+                      placeholder="Option text..."
+                      class="option-input"
+                      required
+                    />
+
+                    @if (questionForm.questionType === 'MULTIPLE_CHOICE' && questionForm.answerOptions.length > 1) {
+                      <button 
+                        class="btn-icon btn-danger" 
+                        (click)="removeAnswerOption(i)"
+                        title="Remove option"
+                      >
+                        ✕
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeQuestionModal()">Cancel</button>
+        <button 
+          class="btn btn-primary" 
+          (click)="saveQuestion()"
+          [disabled]="saving || !questionForm.questionText || (needsAnswerOptions() && questionForm.answerOptions.length === 0)"
+        >
+          {{ saving ? 'Saving...' : (editingQuestion ? 'Update Question' : 'Add Question') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

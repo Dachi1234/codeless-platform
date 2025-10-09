@@ -1,0 +1,93 @@
+<div class="cart-page">
+  <div class="container">
+    <div class="cart-header">
+      <button class="back-btn" routerLink="/courses">
+        <span class="back-arrow">←</span> Back to Courses
+      </button>
+      <h1>Shopping Cart</h1>
+    </div>
+
+    <div class="cart-content" *ngIf="!loading">
+      <!-- Empty Cart -->
+      <div class="empty-cart" *ngIf="items.length === 0">
+        <div class="empty-icon">{{'🛒'}}</div>
+        <h2>Your cart is empty</h2>
+        <p>Browse our courses and add them to your cart</p>
+        <button class="btn-primary" routerLink="/courses">Browse Courses</button>
+      </div>
+
+      <!-- Cart Items -->
+      <div class="cart-with-items" *ngIf="items.length > 0">
+        <div class="cart-items">
+          <div class="cart-item" *ngFor="let item of items">
+            <img 
+              [src]="item.course.imageUrl || '/assets/course-placeholder.jpg'" 
+              [alt]="item.course.title"
+              class="course-image"
+            >
+            <div class="item-info">
+              <h3>{{ item.course.title }}</h3>
+              <span class="course-kind" [class]="'kind-' + item.course.kind.toLowerCase()">
+                {{ item.course.kind }}
+              </span>
+            </div>
+            <div class="item-price">
+              ${{ item.course.price.toFixed(2) }}
+            </div>
+            <button 
+              class="remove-btn" 
+              (click)="removeItem(item.course.id)"
+              aria-label="Remove item"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="cart-summary">
+          <h2>Order Summary</h2>
+          
+          <div class="summary-row">
+            <span>Subtotal ({{ items.length }} {{ items.length === 1 ? 'item' : 'items' }})</span>
+            <span class="price">\${{ subtotal.toFixed(2) }}</span>
+          </div>
+
+          <div class="summary-row discount">
+            <span>Discount</span>
+            <span class="price">\$0.00</span>
+          </div>
+
+          <div class="summary-divider"></div>
+
+          <div class="summary-row total">
+            <span>Total</span>
+            <span class="price">\${{ subtotal.toFixed(2) }}</span>
+          </div>
+
+          <button 
+            class="btn-checkout" 
+            (click)="proceedToCheckout()"
+            [disabled]="items.length === 0"
+          >
+            Proceed to Checkout
+          </button>
+
+          <button 
+            class="btn-secondary btn-clear" 
+            (click)="clearCart()"
+            *ngIf="items.length > 0"
+          >
+            Clear Cart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading" *ngIf="loading">
+      <p>Loading your cart...</p>
+    </div>
+  </div>
+</div>
+

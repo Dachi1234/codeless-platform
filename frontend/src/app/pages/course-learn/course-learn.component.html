@@ -1,0 +1,230 @@
+<div class="learn-page" *ngIf="!loading && course">
+  <!-- Header -->
+  <div class="learn-header">
+    <div class="learn-header__left">
+      <a [routerLink]="['/courses', course.id]" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to Course Info
+      </a>
+      <h1 class="course-title">{{ course.title }}</h1>
+    </div>
+    <div class="learn-header__right">
+      <div class="progress-badge">
+        {{ getCompletedLessons() }}/{{ getTotalLessons() }} lessons • {{ getProgressPercentage() }}%
+      </div>
+      <a routerLink="/dashboard" class="btn-dashboard">Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="learn-layout">
+    <!-- Sidebar - Curriculum -->
+    <aside class="learn-sidebar">
+      <div class="sidebar-header">
+        <h3>Course Content</h3>
+        <div class="progress-bar-small">
+          <div class="progress-fill" [style.width.%]="getProgressPercentage()"></div>
+        </div>
+      </div>
+
+      <div class="curriculum">
+        <div class="section" *ngFor="let section of curriculum; let sectionIdx = index">
+          <div class="section-header">
+            <h4>{{ section.title }}</h4>
+            <span class="section-count">{{ section.lessons.length }} lessons</span>
+          </div>
+          <div class="lesson-list">
+            <div class="lesson-item" 
+                 *ngFor="let lesson of section.lessons; let lessonIdx = index"
+                 [class.active]="lesson.id === currentLessonId"
+                 (click)="selectLesson(sectionIdx, lesson.id)">
+              <div class="lesson-check" (click)="toggleLessonComplete(sectionIdx, lessonIdx); $event.stopPropagation()">
+                <svg *ngIf="lesson.completed" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="lesson-info">
+                <div class="lesson-title">{{ lesson.title }}</div>
+                <div class="lesson-duration">{{ lesson.durationMinutes }} min</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="learn-main">
+      <!-- PRE-RECORDED Course: Content Area -->
+      <div *ngIf="course.kind !== 'LIVE'" class="video-player-container">
+        <ng-container *ngIf="getCurrentLesson() as currentLesson">
+          <!-- Video Lesson -->
+          <ng-container *ngIf="currentLesson.lessonType === 'VIDEO' && currentLesson.contentUrl">
+            <app-video-player
+              [videoUrl]="currentLesson.contentUrl"
+              [lessonId]="currentLesson.id"
+              [lastPosition]="currentLesson.lastPositionSeconds"
+              (progressUpdate)="onVideoProgress($event)"
+              (videoEnded)="onVideoEnded()">
+            </app-video-player>
+          </ng-container>
+
+          <!-- Article Lesson -->
+          <ng-container *ngIf="currentLesson.lessonType === 'ARTICLE'">
+            <app-article-viewer
+              [lessonId]="currentLesson.id">
+            </app-article-viewer>
+          </ng-container>
+
+          <!-- Quiz Lesson -->
+          <ng-container *ngIf="currentLesson.lessonType === 'QUIZ'">
+            <app-quiz-taker
+              *ngIf="showingQuiz && currentQuizId"
+              [quizId]="currentQuizId"
+              (complete)="onQuizComplete($event)"
+              (close)="onQuizClose()">
+            </app-quiz-taker>
+            
+            <app-quiz-results
+              *ngIf="showingQuizResults && currentQuizAttemptId"
+              [attemptId]="currentQuizAttemptId"
+              (close)="onQuizResultsClose()"
+              (retake)="onQuizRetake()">
+            </app-quiz-results>
+          </ng-container>
+
+          <!-- Other Lesson Types Placeholder -->
+          <div *ngIf="currentLesson.lessonType !== 'VIDEO' && currentLesson.lessonType !== 'ARTICLE' && currentLesson.lessonType !== 'QUIZ'" class="video-placeholder">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="#5A8DEE" stroke-width="2"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="#5A8DEE" stroke-width="2"/>
+            </svg>
+            <h3>{{ currentLesson.lessonType }}</h3>
+            <p>{{ currentLesson.title }}</p>
+            <div *ngIf="currentLesson.description" class="lesson-description">
+              {{ currentLesson.description }}
+            </div>
+            <p class="coming-soon">Content builder coming soon...</p>
+          </div>
+
+          <!-- Video with no URL -->
+          <div *ngIf="currentLesson.lessonType === 'VIDEO' && !currentLesson.contentUrl" class="video-placeholder">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" stroke="#5A8DEE" stroke-width="2"/>
+              <path d="M10 8l6 4-6 4V8z" fill="#5A8DEE"/>
+            </svg>
+            <h3>VIDEO</h3>
+            <p>{{ currentLesson.title }}</p>
+            <div *ngIf="currentLesson.description" class="lesson-description">
+              {{ currentLesson.description }}
+            </div>
+            <p class="coming-soon">Video URL not configured</p>
+          </div>
+        </ng-container>
+
+        <div *ngIf="!getCurrentLesson()" class="video-placeholder">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="#5A8DEE" stroke-width="2"/>
+            <path d="M10 8l6 4-6 4V8z" fill="#5A8DEE"/>
+          </svg>
+          <h3>Select a Lesson</h3>
+          <p>Choose a lesson from the curriculum to begin</p>
+        </div>
+        
+        <div class="video-controls">
+          <button class="btn-prev" (click)="previousLesson()" [disabled]="!currentLessonId">Previous Lesson</button>
+          <button class="btn-next" (click)="nextLesson()" [disabled]="!currentLessonId">
+            Next Lesson
+          </button>
+        </div>
+      </div>
+
+      <!-- LIVE Course: Session Schedule -->
+      <div *ngIf="course.kind === 'LIVE'" class="live-course-container">
+        <div class="live-header">
+          <h2>Live Sessions</h2>
+          <span class="live-badge">
+            <span class="live-dot"></span>
+            Live Course
+          </span>
+        </div>
+
+        <div class="upcoming-sessions">
+          <h3>Upcoming Sessions</h3>
+          <div class="session-card">
+            <div class="session-date">
+              <div class="date-day">15</div>
+              <div class="date-month">Feb</div>
+            </div>
+            <div class="session-info">
+              <h4>Session 1: Introduction & Overview</h4>
+              <p class="session-time">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                {{ course.startDate | date:'EEEE, MMM d, y' }} at 7:00 PM EST
+              </p>
+              <p class="session-duration">Duration: 2 hours</p>
+            </div>
+            <button class="btn-join" disabled>Join Session (Available 15 min before)</button>
+          </div>
+
+          <div class="session-card upcoming">
+            <div class="session-date">
+              <div class="date-day">22</div>
+              <div class="date-month">Feb</div>
+            </div>
+            <div class="session-info">
+              <h4>Session 2: Deep Dive</h4>
+              <p class="session-time">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Wednesday, Feb 22, 2025 at 7:00 PM EST
+              </p>
+              <p class="session-duration">Duration: 2 hours</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="past-sessions">
+          <h3>Past Sessions & Recordings</h3>
+          <p class="no-recordings">No recordings available yet.</p>
+        </div>
+      </div>
+
+      <!-- Course Resources -->
+      <div class="course-resources">
+        <h3>Resources</h3>
+        <div class="resource-list">
+          <div class="resource-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Course Syllabus.pdf</span>
+            <button class="btn-download">Download</button>
+          </div>
+          <div class="resource-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Exercise Files.zip</span>
+            <button class="btn-download">Download</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div *ngIf="loading" class="loading-state">
+  <div class="spinner"></div>
+  <p>Loading course...</p>
+</div>
+

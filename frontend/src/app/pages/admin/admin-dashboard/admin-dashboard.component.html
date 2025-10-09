@@ -1,0 +1,152 @@
+<div class="admin-dashboard">
+  <div class="dashboard-header">
+    <h1>Dashboard Overview</h1>
+    <p class="subtitle">Welcome back! Here's what's happening with your platform.</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <!-- Stats Grid -->
+  <div *ngIf="!loading" class="stats-grid">
+    <!-- Revenue Card -->
+    <div class="stat-card">
+      <div class="stat-icon revenue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Total Revenue</p>
+        <h2 class="stat-value">{{ stats.totalRevenue | currency:'USD':'symbol':'1.0-0' }}</h2>
+        <div class="stat-change" [class.positive]="stats.revenueChange >= 0" [class.negative]="stats.revenueChange < 0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path *ngIf="stats.revenueChange >= 0" d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path *ngIf="stats.revenueChange < 0" d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>{{ stats.revenueChange >= 0 ? '+' : '' }}{{ stats.revenueChange }}%</span>
+          <span class="period">vs last month</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enrollments Card -->
+    <div class="stat-card">
+      <div class="stat-icon enrollments">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="white" stroke-width="2"/>
+          <path d="M6 12v5c3 3 7 3 10 0v-5" stroke="white" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Total Enrollments</p>
+        <h2 class="stat-value">{{ stats.totalEnrollments }}</h2>
+        <div class="stat-change" [class.positive]="stats.enrollmentChange >= 0" [class.negative]="stats.enrollmentChange < 0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path *ngIf="stats.enrollmentChange >= 0" d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path *ngIf="stats.enrollmentChange < 0" d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>{{ stats.enrollmentChange >= 0 ? '+' : '' }}{{ stats.enrollmentChange }}%</span>
+          <span class="period">vs last month</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Courses Card -->
+    <div class="stat-card">
+      <div class="stat-icon courses">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="white" stroke-width="2"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="white" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Active Courses</p>
+        <h2 class="stat-value">{{ stats.activeCourses }}</h2>
+        <div class="stat-change" [class.positive]="stats.courseChange >= 0" [class.negative]="stats.courseChange < 0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path *ngIf="stats.courseChange >= 0" d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path *ngIf="stats.courseChange < 0" d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>{{ stats.courseChange >= 0 ? '+' : '' }}{{ stats.courseChange }}%</span>
+          <span class="period">vs last month</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Users Card -->
+    <div class="stat-card">
+      <div class="stat-icon users">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="white" stroke-width="2"/>
+          <circle cx="9" cy="7" r="4" stroke="white" stroke-width="2"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="white" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <p class="stat-label">Total Users</p>
+        <h2 class="stat-value">{{ stats.totalUsers }}</h2>
+        <div class="stat-change" [class.positive]="stats.userChange >= 0" [class.negative]="stats.userChange < 0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path *ngIf="stats.userChange >= 0" d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path *ngIf="stats.userChange < 0" d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>{{ stats.userChange >= 0 ? '+' : '' }}{{ stats.userChange }}%</span>
+          <span class="period">vs last month</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity Section -->
+  <div *ngIf="!loading" class="activity-section">
+    <!-- Recent Orders -->
+    <div class="activity-card">
+      <div class="activity-header">
+        <h3>Recent Orders</h3>
+        <a routerLink="/admin/orders" class="view-all">View All →</a>
+      </div>
+      <div class="activity-content">
+        <div *ngIf="recentOrders.length === 0" class="empty-state">
+          <p>No recent orders</p>
+        </div>
+        <div *ngFor="let order of recentOrders" class="activity-item">
+          <div class="item-info">
+            <p class="item-title">{{ order.userName }}</p>
+            <p class="item-subtitle">{{ order.userEmail }}</p>
+          </div>
+          <div class="item-meta">
+            <span class="amount">{{ order.totalAmount | currency:'USD' }}</span>
+            <span class="status" [ngClass]="getStatusClass(order.status)">{{ order.status }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Enrollments -->
+    <div class="activity-card">
+      <div class="activity-header">
+        <h3>Recent Enrollments</h3>
+        <a routerLink="/admin/enrollments" class="view-all">View All →</a>
+      </div>
+      <div class="activity-content">
+        <div *ngIf="recentEnrollments.length === 0" class="empty-state">
+          <p>No recent enrollments</p>
+        </div>
+        <div *ngFor="let enrollment of recentEnrollments" class="activity-item">
+          <div class="item-info">
+            <p class="item-title">{{ enrollment.userName }}</p>
+            <p class="item-subtitle">{{ enrollment.courseTitle }}</p>
+          </div>
+          <div class="item-meta">
+            <span class="date">{{ enrollment.enrolledAt | date:'short' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

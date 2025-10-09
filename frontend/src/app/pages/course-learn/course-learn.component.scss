@@ -1,0 +1,510 @@
+.learn-page {
+  min-height: 100vh;
+  background: #F9F9F9;
+}
+
+.learn-header {
+  background: white;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+.back-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6B7280;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #5A8DEE;
+  }
+}
+
+.course-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2E2E2E;
+  margin: 0;
+}
+
+.progress-badge {
+  background: #F3F4F6;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6B7280;
+}
+
+.btn-dashboard {
+  padding: 0.5rem 1rem;
+  background: #5A8DEE;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #4c7ed9;
+    transform: translateY(-1px);
+  }
+}
+
+.learn-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 80px);
+}
+
+.learn-sidebar {
+  background: white;
+  border-right: 1px solid #E5E7EB;
+  overflow-y: auto;
+  max-height: calc(100vh - 80px);
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #E5E7EB;
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #2E2E2E;
+  }
+}
+
+.progress-bar-small {
+  height: 6px;
+  background: #E5E7EB;
+  border-radius: 3px;
+  overflow: hidden;
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #5A8DEE 0%, #4ECB71 100%);
+    transition: width 0.3s ease;
+  }
+}
+
+.curriculum {
+  padding: 1rem 0;
+}
+
+.section {
+  margin-bottom: 1rem;
+}
+
+.section-header {
+  padding: 0.75rem 1.5rem;
+  background: #F9FAFB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2E2E2E;
+  }
+}
+
+.section-count {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.lesson-list {
+  padding: 0.5rem 0;
+}
+
+.lesson-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #F9FAFB;
+  }
+
+  &.active {
+    background: #EEF2FF;
+    border-left: 3px solid #5A8DEE;
+    padding-left: calc(1.5rem - 3px);
+  }
+}
+
+.lesson-check {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #D1D5DB;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #4ECB71;
+  }
+}
+
+.lesson-info {
+  flex: 1;
+}
+
+.lesson-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2E2E2E;
+  margin-bottom: 0.25rem;
+}
+
+.lesson-duration {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.learn-main {
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.video-player-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.video-placeholder {
+  aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 2rem;
+  text-align: center;
+
+  h3 {
+    margin: 1rem 0 0.5rem 0;
+    font-size: 24px;
+  }
+
+  p {
+    margin: 0 0 1rem 0;
+    opacity: 0.9;
+  }
+
+  .lesson-description {
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    line-height: 1.6;
+  }
+
+  .coming-soon {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.video-controls {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn-prev, .btn-next {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #5A8DEE;
+  background: white;
+  color: #5A8DEE;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #5A8DEE;
+    color: white;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.btn-next {
+  background: #5A8DEE;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: #4c7ed9;
+  }
+}
+
+.live-course-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.live-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+  }
+}
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #FEE2E2;
+  color: #DC2626;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #DC2626;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.upcoming-sessions, .past-sessions {
+  margin-bottom: 2rem;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+}
+
+.session-card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #F9FAFB;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #5A8DEE;
+  }
+
+  &.upcoming {
+    opacity: 0.7;
+  }
+}
+
+.session-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  padding: 0.75rem;
+  min-width: 60px;
+}
+
+.date-day {
+  font-size: 24px;
+  font-weight: 700;
+  color: #5A8DEE;
+}
+
+.date-month {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+}
+
+.session-info {
+  flex: 1;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0.25rem 0;
+    font-size: 14px;
+    color: #6B7280;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.btn-join {
+  padding: 0.75rem 1.5rem;
+  background: #4ECB71;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: center;
+
+  &:hover:not(:disabled) {
+    background: #3db55e;
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    background: #D1D5DB;
+    cursor: not-allowed;
+  }
+}
+
+.no-recordings {
+  color: #6B7280;
+  font-style: italic;
+}
+
+.course-resources {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #F9FAFB;
+  border-radius: 8px;
+
+  svg {
+    color: #6B7280;
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.btn-download {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #5A8DEE;
+    color: #5A8DEE;
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #E5E7EB;
+    border-top-color: #5A8DEE;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+

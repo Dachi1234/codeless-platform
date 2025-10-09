@@ -1,0 +1,278 @@
+.admin-dashboard {
+  max-width: 1400px;
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1F2937;
+    margin: 0 0 8px 0;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    color: #6B7280;
+    margin: 0;
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #E5E7EB;
+    border-top-color: #5A8DEE;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    color: #6B7280;
+    font-size: 16px;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  gap: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &.revenue {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  }
+
+  &.enrollments {
+    background: linear-gradient(135deg, #5A8DEE 0%, #4F46E5 100%);
+  }
+
+  &.courses {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  }
+
+  &.users {
+    background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%);
+  }
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 8px 0;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 12px 0;
+}
+
+.stat-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+
+  &.positive {
+    color: #10B981;
+  }
+
+  &.negative {
+    color: #EF4444;
+  }
+
+  .period {
+    color: #9CA3AF;
+    font-weight: 400;
+  }
+}
+
+.activity-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
+}
+
+.activity-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #E5E7EB;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1F2937;
+    margin: 0;
+  }
+
+  .view-all {
+    color: #5A8DEE;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #4F46E5;
+    }
+  }
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9CA3AF;
+}
+
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #F9FAFB;
+  }
+}
+
+.item-info {
+  flex: 1;
+
+  .item-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: #1F2937;
+    margin: 0 0 4px 0;
+  }
+
+  .item-subtitle {
+    font-size: 13px;
+    color: #6B7280;
+    margin: 0;
+  }
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .amount {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1F2937;
+  }
+
+  .date {
+    font-size: 13px;
+    color: #6B7280;
+  }
+
+  .status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &.status-success {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+
+    &.status-warning {
+      background: #FEF3C7;
+      color: #92400E;
+    }
+
+    &.status-error {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+
+    &.status-default {
+      background: #E5E7EB;
+      color: #374151;
+    }
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .activity-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header h1 {
+    font-size: 24px;
+  }
+}
+

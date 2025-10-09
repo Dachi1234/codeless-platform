@@ -1,0 +1,94 @@
+<header class="header">
+  <div class="container header__inner">
+    <div class="header__logo">
+      <button class="hamburger" (click)="toggleMobileNav()" aria-label="Open menu" aria-controls="mobile-menu" [attr.aria-expanded]="showMobileNav">
+        <span></span><span></span><span></span>
+      </button>
+      <span class="header__logo-braces">{{ '{' }} {{ '}' }}</span>
+      <a routerLink="/home" class="header__logo-text">CODELESS</a>
+    </div>
+    <nav class="header__nav">
+      <a routerLink="/home" class="header__nav-link">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-10.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Home</span>
+      </a>
+      <a routerLink="/courses" class="header__nav-link">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6l9-3 9 3-9 3-9-3zm0 6l9 3 9-3M3 18l9 3 9-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Courses</span>
+      </a>
+      <a routerLink="/dashboard" class="header__nav-link" *ngIf="authService.isAuthenticated()">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a routerLink="/my-orders" class="header__nav-link" *ngIf="authService.isAuthenticated()">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 7h-4V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM10 5h4v2h-4V5z" fill="currentColor"/></svg>
+        <span>My Orders</span>
+      </a>
+      <a routerLink="/admin" class="header__nav-link header__nav-link--admin" *ngIf="authService.isAdmin()">
+        <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Admin</span>
+      </a>
+    </nav>
+    <div class="header__actions">
+      <!-- Cart Icon with Badge -->
+      <a routerLink="/cart" class="cart-link">
+        <svg class="cart-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 2L7 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-4l-2-2H9zM7 8l5 8 5-8H7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="cart-badge" *ngIf="cartService.cartCount() > 0">{{ cartService.cartCount() }}</span>
+      </a>
+
+      <ng-container *ngIf="authService.isAuthenticated(); else notLoggedIn">
+        <span class="user-name" *ngIf="authService.currentUser()?.fullName">
+          <img src="https://ui-avatars.com/api/?name={{ authService.currentUser()?.fullName }}&background=FD8D6E&color=fff" 
+               alt="{{ authService.currentUser()?.fullName }}" 
+               class="user-avatar">
+          {{ authService.currentUser()?.fullName }}
+        </span>
+        <button class="btn-secondary" (click)="logout()">Logout</button>
+      </ng-container>
+      <ng-template #notLoggedIn>
+        <a routerLink="/login" class="btn-secondary">Login</a>
+        <a routerLink="/register" class="btn-primary">Sign Up</a>
+      </ng-template>
+    </div>
+  </div>
+
+  <nav id="mobile-menu" class="mobile-nav" *ngIf="showMobileNav" (click)="closeMobileNav()">
+    <div class="mobile-nav__panel" (click)="$event.stopPropagation()">
+      <a routerLink="/home" class="header__nav-link" (click)="closeMobileNav()">Home</a>
+      <a routerLink="/courses" class="header__nav-link" (click)="closeMobileNav()">Courses</a>
+      <a routerLink="/cart" class="header__nav-link" (click)="closeMobileNav()">Cart</a>
+      <a routerLink="/dashboard" class="header__nav-link" (click)="closeMobileNav()" *ngIf="authService.isAuthenticated()">Dashboard</a>
+      <a routerLink="/my-orders" class="header__nav-link" (click)="closeMobileNav()" *ngIf="authService.isAuthenticated()">My Orders</a>
+      <a routerLink="/admin" class="header__nav-link" (click)="closeMobileNav()" *ngIf="authService.isAdmin()">Admin</a>
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <ng-container *ngIf="authService.isAuthenticated(); else mobileNotLoggedIn">
+          <button class="btn-secondary" (click)="logout(); closeMobileNav()">Logout</button>
+        </ng-container>
+        <ng-template #mobileNotLoggedIn>
+          <a routerLink="/login" class="btn-secondary" (click)="closeMobileNav()">Login</a>
+          <a routerLink="/register" class="btn-primary" (click)="closeMobileNav()">Sign Up</a>
+        </ng-template>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <router-outlet />
+</main>
+
+<footer class="footer">
+  <div class="container footer__row">
+    <div class="footer__brand">
+      <span class="brandbar__brace">{{ '{' }} {{ '}' }}</span>
+      <span>CODELESS</span>
+    </div>
+    <div class="footer__links">
+      <a routerLink="/home">Home</a>
+      <a routerLink="/courses">Courses</a>
+      <a routerLink="/checkout">Checkout</a>
+    </div>
+  </div>
+</footer>

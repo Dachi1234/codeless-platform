@@ -1,0 +1,83 @@
+<div class="admin-layout" [class.sidebar-closed]="!sidebarOpen">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#5A8DEE"/>
+          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#5A8DEE" stroke-width="2"/>
+        </svg>
+        <span *ngIf="sidebarOpen" class="logo-text">Admin Panel</span>
+      </div>
+      <button class="toggle-btn" (click)="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a *ngFor="let item of menuItems" 
+         [routerLink]="item.route" 
+         routerLinkActive="active"
+         class="nav-item">
+        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Dashboard -->
+          <ng-container *ngIf="item.icon === 'dashboard'">
+            <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+            <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+            <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+            <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+          </ng-container>
+          <!-- Book -->
+          <ng-container *ngIf="item.icon === 'book'">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" stroke-width="2"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" stroke-width="2"/>
+          </ng-container>
+          <!-- Users -->
+          <ng-container *ngIf="item.icon === 'users'">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2"/>
+          </ng-container>
+          <!-- Shopping Bag -->
+          <ng-container *ngIf="item.icon === 'shopping-bag'">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="2"/>
+            <path d="M3 6h18M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="2"/>
+          </ng-container>
+          <!-- Graduation Cap -->
+          <ng-container *ngIf="item.icon === 'graduation-cap'">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" stroke-width="2"/>
+            <path d="M6 12v5c3 3 7 3 10 0v-5" stroke="currentColor" stroke-width="2"/>
+          </ng-container>
+          <!-- Chart -->
+          <ng-container *ngIf="item.icon === 'chart'">
+            <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </ng-container>
+        </svg>
+        <span *ngIf="sidebarOpen" class="nav-label">{{ item.label }}</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="footer-btn" (click)="backToSite()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span *ngIf="sidebarOpen">Back to Site</span>
+      </button>
+      <button class="footer-btn" (click)="logout()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span *ngIf="sidebarOpen">Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="admin-main">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+

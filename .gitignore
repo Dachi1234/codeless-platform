@@ -1,0 +1,51 @@
+# Root gitignore for Codeless E-Learning Platform
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+*.env
+
+# Frontend environment files (contains API keys)
+frontend/src/environments/environment.ts
+frontend/src/environments/environment.prod.ts
+
+# Frontend build output
+frontend/dist/
+frontend/.angular/
+frontend/node_modules/
+
+# Backend build output
+backend/codeless-backend/target/
+backend/codeless-backend/.mvn/
+backend/codeless-backend/mvnw
+backend/codeless-backend/mvnw.cmd
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Database files (local only)
+*.db
+*.sqlite
+

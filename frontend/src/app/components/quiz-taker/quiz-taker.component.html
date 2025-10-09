@@ -1,0 +1,199 @@
+<div class="quiz-container">
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (loading) {
+    <div class="loading">Loading quiz...</div>
+  } @else if (quiz) {
+    @if (!quizStarted) {
+      <!-- Quiz Introduction -->
+      <div class="quiz-intro">
+        <h2>{{ quiz.title }}</h2>
+        
+        @if (quiz.description) {
+          <p class="quiz-description">{{ quiz.description }}</p>
+        }
+
+        <div class="quiz-info">
+          <div class="info-item">
+            <span class="info-label">Questions:</span>
+            <span class="info-value">{{ quiz.questions.length }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="info-label">Passing Score:</span>
+            <span class="info-value">{{ quiz.passingScore }}%</span>
+          </div>
+
+          @if (quiz.timeLimitMinutes) {
+            <div class="info-item">
+              <span class="info-label">Time Limit:</span>
+              <span class="info-value">{{ quiz.timeLimitMinutes }} minutes</span>
+            </div>
+          }
+
+          @if (quiz.maxAttempts) {
+            <div class="info-item">
+              <span class="info-label">Attempts:</span>
+              <span class="info-value">{{ quiz.attemptCount }} / {{ quiz.maxAttempts }}</span>
+            </div>
+          }
+        </div>
+
+        @if (!quiz.canAttempt) {
+          <div class="warning-message">
+            You have reached the maximum number of attempts for this quiz.
+          </div>
+        } @else {
+          <button class="btn btn-primary btn-large" (click)="startQuiz()">
+            Start Quiz
+          </button>
+        }
+
+        <button class="btn btn-secondary" (click)="closeQuiz()">
+          Cancel
+        </button>
+      </div>
+    } @else if (quizCompleted) {
+      <!-- Quiz Completed -->
+      <div class="quiz-completed">
+        <div class="success-icon">✓</div>
+        <h2>Quiz Submitted!</h2>
+        <p>Your answers have been submitted successfully.</p>
+        <button class="btn btn-primary" (click)="closeQuiz()">
+          View Results
+        </button>
+      </div>
+    } @else {
+      <!-- Quiz Taking -->
+      <div class="quiz-taking">
+        <!-- Header -->
+        <div class="quiz-header">
+          <div class="quiz-title">
+            <h3>{{ quiz.title }}</h3>
+            <span class="question-counter">
+              Question {{ currentQuestionIndex + 1 }} of {{ quiz.questions.length }}
+            </span>
+          </div>
+
+          <div class="quiz-actions">
+            @if (timeRemaining !== null) {
+              <div class="timer" [class.warning]="timeRemaining < 60">
+                ⏱️ {{ getTimeRemainingDisplay() }}
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+          <div 
+            class="progress-fill" 
+            [style.width.%]="(getAnsweredCount() / quiz.questions.length) * 100"
+          ></div>
+        </div>
+        <div class="progress-text">
+          {{ getAnsweredCount() }} / {{ quiz.questions.length }} answered
+        </div>
+
+        <!-- Current Question -->
+        @if (getCurrentQuestion(); as question) {
+          <div class="question-container">
+            <div class="question-header">
+              <span class="question-number">Q{{ currentQuestionIndex + 1 }}</span>
+              <span class="question-points">{{ question.points }} {{ question.points === 1 ? 'point' : 'points' }}</span>
+            </div>
+
+            <div class="question-text">
+              {{ question.questionText }}
+            </div>
+
+            <div class="answer-section">
+              @if (question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE') {
+                <!-- Multiple Choice / True-False -->
+                <div class="answer-options">
+                  @for (option of question.answerOptions; track option.id) {
+                    <label class="answer-option">
+                      <input 
+                        type="radio" 
+                        [name]="'question-' + question.id"
+                        [value]="option.id"
+                        [checked]="getSelectedOptionId(question.id) === option.id"
+                        (change)="selectAnswer(question.id, option.id)"
+                      />
+                      <span class="option-content">{{ option.optionText }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (question.questionType === 'FILL_BLANK' || question.questionType === 'SHORT_ANSWER') {
+                <!-- Fill Blank / Short Answer -->
+                <div class="text-answer">
+                  @if (question.questionType === 'FILL_BLANK') {
+                    <input 
+                      type="text"
+                      [value]="getTextAnswer(question.id)"
+                      (input)="setTextAnswer(question.id, $any($event.target).value)"
+                      placeholder="Type your answer..."
+                      class="answer-input"
+                    />
+                  } @else {
+                    <textarea 
+                      [value]="getTextAnswer(question.id)"
+                      (input)="setTextAnswer(question.id, $any($event.target).value)"
+                      placeholder="Type your answer..."
+                      rows="4"
+                      class="answer-textarea"
+                    ></textarea>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Navigation -->
+        <div class="quiz-navigation">
+          <button 
+            class="btn btn-secondary"
+            (click)="previousQuestion()"
+            [disabled]="currentQuestionIndex === 0"
+          >
+            ← Previous
+          </button>
+
+          <div class="question-indicators">
+            @for (q of quiz.questions; track q.id; let i = $index) {
+              <button 
+                class="question-indicator"
+                [class.current]="i === currentQuestionIndex"
+                [class.answered]="isQuestionAnswered(q.id)"
+                (click)="goToQuestion(i)"
+              >
+                {{ i + 1 }}
+              </button>
+            }
+          </div>
+
+          @if (currentQuestionIndex < quiz.questions.length - 1) {
+            <button 
+              class="btn btn-primary"
+              (click)="nextQuestion()"
+            >
+              Next →
+            </button>
+          } @else {
+            <button 
+              class="btn btn-success"
+              (click)="submitQuiz()"
+              [disabled]="!canSubmit() || submitting"
+            >
+              {{ submitting ? 'Submitting...' : 'Submit Quiz' }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>
+

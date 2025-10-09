@@ -1,0 +1,32 @@
+<div class="article-viewer">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading article...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && error" class="error-state">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#EF4444"/>
+    </svg>
+    <h3>Failed to load article</h3>
+    <p>There was an error loading the article content. Please try again later.</p>
+  </div>
+
+  <!-- Article Content -->
+  <div *ngIf="!loading && !error" class="article-content">
+    <div class="article-meta">
+      <span class="read-time">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        {{ estimatedReadTime }} min read
+      </span>
+    </div>
+
+    <div class="article-body" [innerHTML]="articleContent"></div>
+  </div>
+</div>
+

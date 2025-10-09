@@ -1,0 +1,121 @@
+<div class="results-container">
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (loading) {
+    <div class="loading">Loading results...</div>
+  } @else if (result) {
+    <!-- Results Header -->
+    <div class="results-header" [class.passed]="result.passed" [class.failed]="!result.passed">
+      <div class="result-icon">
+        {{ result.passed ? '🎉' : '📝' }}
+      </div>
+      
+      <h2>{{ result.passed ? 'Congratulations!' : 'Quiz Complete' }}</h2>
+      
+      <div class="score-display">
+        <div class="score-circle" [class.passed]="result.passed">
+          <span class="score-value">{{ result.score | number:'1.0-1' }}%</span>
+        </div>
+      </div>
+
+      <p class="result-message">
+        {{ result.passed 
+          ? 'You passed the quiz!' 
+          : 'Keep practicing! You can do it!' }}
+      </p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">✓</div>
+        <div class="stat-value">{{ getCorrectCount() }} / {{ result.questionResults.length }}</div>
+        <div class="stat-label">Correct Answers</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value">{{ getEarnedPoints() }} / {{ getTotalPoints() }}</div>
+        <div class="stat-label">Points Earned</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-value">{{ getTimeSpentDisplay() }}</div>
+        <div class="stat-label">Time Spent</div>
+      </div>
+    </div>
+
+    <!-- Question Results -->
+    <div class="questions-section">
+      <h3>Question Review</h3>
+
+      <div class="questions-list">
+        @for (question of result.questionResults; track question.questionId; let i = $index) {
+          <div class="question-result" [class.correct]="question.isCorrect" [class.incorrect]="!question.isCorrect">
+            <div class="question-header">
+              <div class="question-number-badge" [class.correct]="question.isCorrect">
+                <span>{{ i + 1 }}</span>
+                <span class="result-icon">{{ question.isCorrect ? '✓' : '✗' }}</span>
+              </div>
+
+              <div class="question-points">
+                {{ question.pointsEarned }} / {{ question.pointsPossible }} pts
+              </div>
+            </div>
+
+            <div class="question-text">
+              {{ question.questionText }}
+            </div>
+
+            @if (question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE') {
+              <div class="answer-review">
+                @if (question.selectedOptionText) {
+                  <div class="user-answer" [class.correct]="question.isCorrect" [class.incorrect]="!question.isCorrect">
+                    <strong>Your Answer:</strong> {{ question.selectedOptionText }}
+                  </div>
+                }
+
+                @if (!question.isCorrect && question.correctOptionText) {
+                  <div class="correct-answer">
+                    <strong>Correct Answer:</strong> {{ question.correctOptionText }}
+                  </div>
+                }
+              </div>
+            } @else {
+              <!-- Text Answer -->
+              <div class="answer-review">
+                @if (question.textAnswer) {
+                  <div class="user-answer">
+                    <strong>Your Answer:</strong>
+                    <div class="text-answer-content">{{ question.textAnswer }}</div>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (question.explanation) {
+              <div class="explanation">
+                <strong>💡 Explanation:</strong>
+                <p>{{ question.explanation }}</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="results-actions">
+      <button class="btn btn-secondary" (click)="closeResults()">
+        Close
+      </button>
+      <button class="btn btn-primary" (click)="retakeQuiz()">
+        Retake Quiz
+      </button>
+    </div>
+  }
+</div>
+

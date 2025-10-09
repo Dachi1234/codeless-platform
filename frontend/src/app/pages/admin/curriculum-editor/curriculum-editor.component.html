@@ -1,0 +1,286 @@
+<div class="curriculum-editor">
+  <!-- Header -->
+  <div class="editor-header">
+    <div>
+      <a routerLink="/admin/courses" class="breadcrumb">← Courses</a>
+      <h1>Curriculum Editor</h1>
+      <p class="course-name">{{ courseName }}</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-add-section" (click)="openAddSectionModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add Section
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-value">{{ sections.length }}</span>
+      <span class="stat-label">Sections</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ getTotalLessons() }}</span>
+      <span class="stat-label">Lessons</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ formatDuration(getTotalDuration()) }}</span>
+      <span class="stat-label">Total Duration</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading curriculum...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && sections.length === 0" class="empty-state">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="#9CA3AF" stroke-width="2"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="#9CA3AF" stroke-width="2"/>
+    </svg>
+    <h3>No curriculum yet</h3>
+    <p>Start building your course by adding sections and lessons</p>
+    <button class="btn-create-first" (click)="openAddSectionModal()">Create First Section</button>
+  </div>
+
+  <!-- Curriculum List -->
+  <div *ngIf="!loading && sections.length > 0" class="curriculum-list">
+    <div *ngFor="let section of sections; let i = index" class="section-card">
+      <!-- Section Header -->
+      <div class="section-header">
+        <div class="section-info">
+          <h3 class="section-title">
+            <span class="section-number">Section {{ section.sectionOrder }}</span>
+            {{ section.title }}
+          </h3>
+          <p class="section-description" *ngIf="section.description">{{ section.description }}</p>
+          <div class="section-meta">
+            <span>{{ section.lessons.length }} lessons</span>
+          </div>
+        </div>
+        <div class="section-actions">
+          <button class="action-btn" (click)="openAddLessonModal(section)" title="Add Lesson">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Add Lesson
+          </button>
+          <button class="action-btn" (click)="openEditSectionModal(section)" title="Edit Section">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+          <button class="action-btn delete" (click)="deleteSection(section)" title="Delete Section">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lessons List -->
+      <div class="lessons-list" *ngIf="section.lessons.length > 0">
+        <div *ngFor="let lesson of section.lessons" class="lesson-item">
+          <div class="lesson-icon">{{ getLessonIcon(lesson.lessonType) }}</div>
+          <div class="lesson-info">
+            <h4 class="lesson-title">
+              {{ lesson.title }}
+              <span class="preview-badge" *ngIf="lesson.isPreview">Preview</span>
+            </h4>
+            <p class="lesson-meta">
+              <span class="lesson-type">{{ lesson.lessonType }}</span>
+              <span *ngIf="lesson.durationMinutes">• {{ lesson.durationMinutes }} min</span>
+              <span *ngIf="lesson.contentUrl" class="content-url">• {{ lesson.contentUrl.substring(0, 50) }}...</span>
+            </p>
+          </div>
+          <div class="lesson-actions">
+            <button *ngIf="lesson.lessonType === 'ARTICLE'" class="action-btn-small content" (click)="openArticleEditor(lesson)" title="Edit Content">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2"/>
+                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+            <button *ngIf="lesson.lessonType === 'QUIZ'" class="action-btn-small content" (click)="openQuizBuilder(lesson)" title="Edit Quiz">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="action-btn-small" (click)="openEditLessonModal(lesson)" title="Edit">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+            <button class="action-btn-small delete" (click)="deleteLesson(lesson)" title="Delete">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty Lessons -->
+      <div *ngIf="section.lessons.length === 0" class="no-lessons">
+        <p>No lessons yet. <a (click)="openAddLessonModal(section)">Add first lesson</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section Modal -->
+<div class="modal-overlay" *ngIf="showSectionModal" (click)="closeSectionModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ editingSection ? 'Edit Section' : 'New Section' }}</h2>
+      <button class="modal-close" (click)="closeSectionModal()">×</button>
+    </div>
+    <form (ngSubmit)="saveSectionSubmit()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="section-title">Title *</label>
+          <input type="text" id="section-title" [(ngModel)]="sectionForm.title" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="section-description">Description</label>
+          <textarea id="section-description" [(ngModel)]="sectionForm.description" name="description" rows="3"></textarea>
+        </div>
+        <div class="form-group" *ngIf="editingSection">
+          <label for="section-order">Order</label>
+          <input type="number" id="section-order" [(ngModel)]="sectionForm.sectionOrder" name="sectionOrder" min="1">
+          <small>Change the display order of this section</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeSectionModal()">Cancel</button>
+        <button type="submit" class="btn-primary">{{ editingSection ? 'Update' : 'Create' }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Lesson Modal -->
+<div class="modal-overlay" *ngIf="showLessonModal" (click)="closeLessonModal()">
+  <div class="modal modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ editingLesson ? 'Edit Lesson' : 'New Lesson' }}</h2>
+      <button class="modal-close" (click)="closeLessonModal()">×</button>
+    </div>
+    <form (ngSubmit)="saveLessonSubmit()">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="lesson-title">Title *</label>
+            <input type="text" id="lesson-title" [(ngModel)]="lessonForm.title" name="title" required>
+          </div>
+          <div class="form-group full-width">
+            <label for="lesson-description">Description</label>
+            <textarea id="lesson-description" [(ngModel)]="lessonForm.description" name="description" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="lesson-type">Type *</label>
+            <select id="lesson-type" [(ngModel)]="lessonForm.lessonType" name="lessonType" required>
+              <option *ngFor="let type of lessonTypes" [value]="type.value">{{ type.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="lesson-duration">Duration (minutes)</label>
+            <input type="number" id="lesson-duration" [(ngModel)]="lessonForm.durationMinutes" name="durationMinutes" min="0">
+          </div>
+
+          <!-- VIDEO TYPE -->
+          <div class="form-group full-width" *ngIf="lessonForm.lessonType === 'VIDEO'">
+            <label for="lesson-url">Video URL *</label>
+            <input type="text" id="lesson-url" [(ngModel)]="lessonForm.contentUrl" name="contentUrl" placeholder="https://youtube.com/watch?v=..." required>
+            <small>✅ YouTube: https://youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID</small>
+            <small>✅ Vimeo: https://vimeo.com/VIDEO_ID</small>
+            <small>✅ Direct MP4: https://example.com/video.mp4</small>
+          </div>
+
+          <!-- ARTICLE TYPE -->
+          <div class="form-group full-width" *ngIf="lessonForm.lessonType === 'ARTICLE'">
+            <div class="info-box">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#3B82F6" stroke-width="2"/>
+                <path d="M12 16v-4M12 8h.01" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <strong>Article Content Editor</strong>
+                <p>After creating this lesson, click the "Edit Content" button (📄 icon) to open the rich text editor and write your article.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUIZ TYPE -->
+          <div class="form-group full-width" *ngIf="lessonForm.lessonType === 'QUIZ'">
+            <label for="lesson-url">Quiz Configuration</label>
+            <input type="text" id="lesson-url" [(ngModel)]="lessonForm.contentUrl" name="contentUrl" placeholder="quiz_id or quiz_config_url">
+            <small>⚠️ Quiz builder not yet implemented - Enter quiz ID or config URL</small>
+          </div>
+
+          <!-- EXERCISE TYPE -->
+          <div class="form-group full-width" *ngIf="lessonForm.lessonType === 'EXERCISE'">
+            <label for="lesson-url">Exercise Instructions URL (optional)</label>
+            <input type="text" id="lesson-url" [(ngModel)]="lessonForm.contentUrl" name="contentUrl" placeholder="https://example.com/exercise-instructions">
+            <small>Link to exercise instructions or coding challenge</small>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="lessonForm.isPreview" name="isPreview">
+              <span>Free Preview</span>
+            </label>
+            <small>Allow non-enrolled users to view this lesson</small>
+          </div>
+          <div class="form-group" *ngIf="editingLesson">
+            <label for="lesson-order">Order</label>
+            <input type="number" id="lesson-order" [(ngModel)]="lessonForm.lessonOrder" name="lessonOrder" min="1">
+            <small>Change the display order of this lesson</small>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="closeLessonModal()">Cancel</button>
+        <button type="submit" class="btn-primary">{{ editingLesson ? 'Update' : 'Create' }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Article Editor Modal -->
+<div class="modal-overlay" *ngIf="showArticleEditor" (click)="closeArticleEditor()">
+  <div class="modal modal-extra-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Article Content Editor</h2>
+      <button class="modal-close" (click)="closeArticleEditor()">×</button>
+    </div>
+    <div class="modal-body" style="padding: 0;">
+      <app-article-editor
+        *ngIf="editingArticleLessonId"
+        [lessonId]="editingArticleLessonId"
+        (saved)="onArticleSaved()"
+        (cancelled)="closeArticleEditor()">
+      </app-article-editor>
+    </div>
+  </div>
+</div>
+
+<!-- Quiz Builder Modal -->
+<div *ngIf="showQuizBuilder" class="modal-overlay">
+  <div class="modal-content modal-extra-large">
+    <app-quiz-builder
+      *ngIf="editingQuizLessonId"
+      [lessonId]="editingQuizLessonId"
+      (saved)="onQuizSaved()"
+      (close)="closeQuizBuilder()">
+    </app-quiz-builder>
+  </div>
+</div>
+
