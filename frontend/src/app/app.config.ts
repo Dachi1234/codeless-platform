@@ -4,6 +4,7 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 
 import { routes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { apiUrlInterceptor } from './interceptors/api-url.interceptor';
 import { AuthService } from './services/auth.service';
 
 function authBootstrapFactory() {
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([apiUrlInterceptor, authInterceptor])),
     { provide: APP_INITIALIZER, useFactory: authBootstrapFactory, multi: true }
   ]
 };
