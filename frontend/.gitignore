@@ -41,6 +41,5 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Environment files (contains API keys)
-/src/environments/environment.ts
-/src/environments/environment.prod.ts
+# Environment files are now committed (TinyMCE keys are client-side and domain-restricted)
+# See environment.template.ts for guidelines on what's safe to commit
