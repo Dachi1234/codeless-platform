@@ -23,6 +23,6 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Run the application
-# Use PORT env variable from Render, fallback to 8080
-ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]
+# PORT env variable is read from application.yml
+ENTRYPOINT ["java", "-jar", "app.jar"]
 
