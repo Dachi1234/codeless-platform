@@ -2,7 +2,7 @@ spring:
   application:
     name: codeless-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/codeless_db
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/codeless_db}
     username: ${DB_USERNAME:codeless_user}
     password: ${DB_PASSWORD:superuser}
     driver-class-name: org.postgresql.Driver
