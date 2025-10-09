@@ -1,14 +1,12 @@
 # Root gitignore for Codeless E-Learning Platform
 
-# Environment files with secrets
+# Backend environment files with secrets
 .env
 .env.local
 .env.production
-*.env
+backend/codeless-backend/.env*
 
-# Frontend environment files (contains API keys)
-frontend/src/environments/environment.ts
-frontend/src/environments/environment.prod.ts
+# Note: Frontend environment files are committed (TinyMCE keys are client-side and domain-restricted)
 
 # Frontend build output
 frontend/dist/
