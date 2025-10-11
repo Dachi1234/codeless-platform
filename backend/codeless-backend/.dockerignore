@@ -1,9 +1,40 @@
+# Maven
 target/
-.mvn/
-mvnw
-mvnw.cmd
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# Local environment
+.env
+.env.local
+set-env.ps1
+
+# Database scripts (not needed in container)
+database-scripts/
+*.sql
+
+# Logs
+logs/
 *.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
 .git/
 .gitignore
-README.md
 
+# Documentation
+*.md
+HELP.md

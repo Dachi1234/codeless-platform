@@ -47,3 +47,9 @@ logs/
 *.db
 *.sqlite
 
+# Cloud Run deployment files (keep local only)
+backend/codeless-backend/Dockerfile.cloudrun
+backend/codeless-backend/.gcloudignore
+cloud-run-setup.sh
+cloud-run-setup.ps1
+

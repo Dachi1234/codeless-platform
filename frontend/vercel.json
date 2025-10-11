@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://codeless-platform.onrender.com/api/:path*"
+      "destination": "https://codeless-backend-231098067761.europe-west1.run.app/api/:path*"
     },
     {
       "source": "/(.*)",

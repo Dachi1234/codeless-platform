@@ -25,4 +25,3 @@ EXPOSE 8080
 # Run the application
 # PORT env variable is read from application.yml
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
