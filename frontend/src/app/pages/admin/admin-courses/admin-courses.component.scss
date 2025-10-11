@@ -256,6 +256,11 @@ select {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  user-select: none;
+
+  &:active {
+    transform: scale(0.95);
+  }
 
   &.published {
     background: #D1FAE5;

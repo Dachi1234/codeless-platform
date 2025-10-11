@@ -1,12 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { DashboardService, DashboardStats, Achievement, CourseProgress } from '../../services/dashboard.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -16,12 +19,20 @@ export class DashboardComponent implements OnInit {
   coursesWithProgress: CourseProgress[] = [];
   loading = true;
   activeTab: 'in-progress' | 'completed' | 'all' = 'in-progress';
+  
+  // Profile editing
+  isEditingProfile = false;
+  editedFullName = '';
+  currentUser: any = null;
 
   constructor(
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
+    this.currentUser = this.authService.currentUser();
     this.loadDashboard();
   }
 
@@ -109,6 +120,57 @@ export class DashboardComponent implements OnInit {
   getCompletionRate(): number {
     if (!this.stats || this.stats.totalCourses === 0) return 0;
     return Math.round((this.stats.completedCourses / this.stats.totalCourses) * 100);
+  }
+
+  // Profile editing methods
+  getUserAvatarUrl(): string {
+    if (this.currentUser?.profilePictureUrl) {
+      return this.currentUser.profilePictureUrl;
+    }
+    const name = this.currentUser?.fullName || 'User';
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=120&background=FD8D6E&color=fff`;
+  }
+
+  startEditProfile(): void {
+    this.isEditingProfile = true;
+    this.editedFullName = this.currentUser?.fullName || '';
+  }
+
+  cancelEdit(): void {
+    this.isEditingProfile = false;
+    this.editedFullName = '';
+  }
+
+  changeAvatar(): void {
+    const newName = prompt('Enter your name for a new avatar:', this.currentUser?.fullName || '');
+    if (newName && newName.trim()) {
+      this.editedFullName = newName.trim();
+      // Update avatar preview
+      this.currentUser = { ...this.currentUser, fullName: this.editedFullName };
+    }
+  }
+
+  saveProfile(): void {
+    if (!this.editedFullName.trim()) {
+      alert('Please enter a valid name');
+      return;
+    }
+
+    this.http.put('/api/users/profile', {
+      fullName: this.editedFullName
+    }).subscribe({
+      next: (updatedUser: any) => {
+        console.log('Profile updated:', updatedUser);
+        this.currentUser = updatedUser;
+        this.authService.updateCurrentUser(updatedUser);
+        this.isEditingProfile = false;
+        alert('Profile updated successfully!');
+      },
+      error: (err) => {
+        console.error('Error updating profile:', err);
+        alert('Failed to update profile. Please try again.');
+      }
+    });
   }
 }
 

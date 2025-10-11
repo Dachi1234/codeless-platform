@@ -1,17 +1,38 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AsyncPipe, CurrencyPipe, DatePipe, NgIf } from '@angular/common';
+import { AsyncPipe, CurrencyPipe, DatePipe, NgIf, NgFor } from '@angular/common';
 import { Course, CourseService } from '../../services/course.service';
 import { map, switchMap, tap } from 'rxjs/operators';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, of } from 'rxjs';
 import { EnrollmentService } from '../../services/enrollment.service';
 import { AuthService } from '../../services/auth.service';
 import { CartService } from '../../services/cart.service';
+import { HttpClient } from '@angular/common/http';
+import { CourseReviewsComponent } from '../../components/course-reviews/course-reviews.component';
+
+// Curriculum types
+interface CurriculumLesson {
+  id: number;
+  title: string;
+  contentType: string;
+  durationMinutes?: number;
+}
+
+interface CurriculumSection {
+  id: number;
+  title: string;
+  sectionOrder: number;
+  lessons: CurriculumLesson[];
+}
+
+interface CurriculumResponse {
+  sections: CurriculumSection[];
+}
 
 @Component({
   selector: 'app-course-detail',
   standalone: true,
-  imports: [NgIf, RouterLink, AsyncPipe, CurrencyPipe, DatePipe],
+  imports: [NgIf, NgFor, RouterLink, AsyncPipe, CurrencyPipe, DatePipe, CourseReviewsComponent],
   template: `
     <section class="course-detail">
       <div class="container">
@@ -92,57 +113,56 @@ import { CartService } from '../../services/cart.service';
               <div class="tab-content">
                 <!-- Overview Tab -->
                 <div class="course-detail__learn-section" *ngIf="activeTab === 'overview'">
-                  <h2 class="section-title">What you'll learn</h2>
-                  <div class="learn-grid">
-                    <div class="learn-item">
-                      <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span>SEO & Keyword Research</span>
-                    </div>
-                    <div class="learn-item">
-                      <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span>Social Media Marketing</span>
-                    </div>
-                    <div class="learn-item">
-                      <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span>Pay-Per-Click Advertising</span>
-                    </div>
-                    <div class="learn-item">
-                      <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span>Content Marketing Strategy</span>
-                    </div>
-                    <div class="learn-item">
-                      <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span>Email Marketing Automation</span>
-                    </div>
-                    <div class="learn-item">
-                      <svg class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 6L9 17l-5-5" stroke="#4ECB71" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span>Analytics & Performance Tracking</span>
-                    </div>
+                  <h2 class="section-title">Course Overview</h2>
+                  <div class="course-description">
+                    <p>{{ c.description || 'No description available.' }}</p>
                   </div>
                 </div>
 
                 <!-- Syllabus Tab -->
                 <div class="course-detail__content-section" *ngIf="activeTab === 'syllabus'">
                   <h2 class="section-title">Course Syllabus</h2>
-                  <p>Detailed syllabus content will be available soon. This section will include module breakdowns, lesson plans, and learning objectives.</p>
+                  <ng-container *ngIf="curriculum$ | async as curriculum">
+                    <div class="curriculum-sections" *ngIf="curriculum.sections && curriculum.sections.length > 0">
+                      <div class="curriculum-section" *ngFor="let section of curriculum.sections">
+                        <div class="section-header">
+                          <h3 class="section-title-sm">{{ section.title }}</h3>
+                          <span class="lesson-count">{{ section.lessons.length }} {{ section.lessons.length === 1 ? 'lesson' : 'lessons' }}</span>
+                        </div>
+                        <div class="section-lessons">
+                          <div class="lesson-item" *ngFor="let lesson of section.lessons">
+                            <div class="lesson-icon">
+                              <svg *ngIf="lesson.contentType === 'VIDEO'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 3l14 9-14 9V3z" fill="#6366F1"/>
+                              </svg>
+                              <svg *ngIf="lesson.contentType === 'QUIZ'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 2L7 4H3v14h4l2 2h6l2-2h4V4h-4l-2-2H9z" stroke="#10B981" stroke-width="2" fill="none"/>
+                                <circle cx="12" cy="11" r="1" fill="#10B981"/>
+                                <path d="M12 14v2" stroke="#10B981" stroke-width="2"/>
+                              </svg>
+                              <svg *ngIf="lesson.contentType === 'TEXT'" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6h16M4 12h16M4 18h10" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                            <span class="lesson-title">{{ lesson.title }}</span>
+                            <span class="lesson-duration" *ngIf="lesson.durationMinutes">{{ lesson.durationMinutes }} min</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p *ngIf="!curriculum.sections || curriculum.sections.length === 0" class="empty-message">
+                      No curriculum available yet. Check back soon!
+                    </p>
+                  </ng-container>
                 </div>
 
                 <!-- Reviews Tab -->
                 <div class="course-detail__content-section" *ngIf="activeTab === 'reviews'">
-                  <h2 class="section-title">Student Reviews</h2>
-                  <p>Student reviews and testimonials will appear here. You'll be able to see ratings, feedback, and success stories from past students.</p>
+                  <app-course-reviews 
+                    [courseId]="c.id" 
+                    [canReview]="isEnrolled || false" 
+                    [averageRating]="c.rating || 0">
+                  </app-course-reviews>
                 </div>
 
                 <!-- Schedule Tab -->
@@ -251,7 +271,101 @@ import { CartService } from '../../services/cart.service';
       </div>
     </section>
   `,
-  styles: ``
+  styles: `
+    .course-description {
+      font-size: 16px;
+      line-height: 1.7;
+      color: #374151;
+      margin-top: 16px;
+    }
+
+    .curriculum-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .curriculum-section {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: #F9FAFB;
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    .section-title-sm {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0;
+    }
+
+    .lesson-count {
+      font-size: 14px;
+      color: #6B7280;
+      font-weight: 500;
+    }
+
+    .section-lessons {
+      padding: 12px;
+    }
+
+    .lesson-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    .lesson-item:hover {
+      background: #F9FAFB;
+    }
+
+    .lesson-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #F3F4F6;
+      flex-shrink: 0;
+    }
+
+    .lesson-title {
+      flex: 1;
+      font-size: 15px;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    .lesson-duration {
+      font-size: 13px;
+      color: #9CA3AF;
+      font-weight: 500;
+    }
+
+    .empty-message {
+      color: #6B7280;
+      font-size: 15px;
+      text-align: center;
+      padding: 40px 20px;
+      background: #F9FAFB;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+  `
 })
 export class CourseDetailComponent {
   private readonly route = inject(ActivatedRoute);
@@ -260,13 +374,19 @@ export class CourseDetailComponent {
   private readonly enrollmentService = inject(EnrollmentService);
   private readonly authService = inject(AuthService);
   private readonly cartService = inject(CartService);
+  private readonly http = inject(HttpClient);
 
   course$: Observable<Course> = this.route.paramMap.pipe(
     map(params => Number(params.get('id'))),
     switchMap(id => this.service.get(id)),
-    tap(course => this.checkEnrollmentStatus(course.id))
+    tap(course => {
+      this.checkEnrollmentStatus(course.id);
+      this.loadCurriculum(course.id);
+    })
   );
 
+  curriculum$: Observable<CurriculumResponse | null> = of(null);
+  
   activeTab: 'overview' | 'syllabus' | 'reviews' | 'schedule' = 'overview';
   isEnrolling = false;
   isEnrolled = false;
@@ -276,6 +396,10 @@ export class CourseDetailComponent {
 
   setActiveTab(tab: 'overview' | 'syllabus' | 'reviews' | 'schedule'): void {
     this.activeTab = tab;
+  }
+
+  loadCurriculum(courseId: number): void {
+    this.curriculum$ = this.http.get<CurriculumResponse>(`/api/courses/${courseId}/curriculum`);
   }
 
   checkEnrollmentStatus(courseId: number): void {

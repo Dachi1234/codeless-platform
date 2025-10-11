@@ -99,6 +99,12 @@
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2"/>
                 </svg>
               </a>
+              <a *ngIf="course.kind === 'LIVE'" [routerLink]="['/admin/courses', course.id, 'sessions']" class="action-btn sessions" title="Sessions">
+                📅
+              </a>
+              <a *ngIf="course.kind === 'LIVE'" [routerLink]="['/admin/courses', course.id, 'assignments']" class="action-btn assignments" title="Assignments">
+                📝
+              </a>
               <button class="action-btn delete" (click)="deleteCourse(course.id)" title="Delete">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke="currentColor" stroke-width="2"/>

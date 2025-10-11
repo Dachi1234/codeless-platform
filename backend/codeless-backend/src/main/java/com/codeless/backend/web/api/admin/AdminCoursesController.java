@@ -2,13 +2,21 @@ package com.codeless.backend.web.api.admin;
 
 import com.codeless.backend.domain.Course;
 import com.codeless.backend.repository.CourseRepository;
+import com.codeless.backend.repository.CartItemRepository;
+import com.codeless.backend.repository.OrderItemRepository;
+import com.codeless.backend.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -24,6 +32,9 @@ import java.util.stream.Collectors;
 public class AdminCoursesController {
 
     private final CourseRepository courseRepository;
+    private final CartItemRepository cartItemRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Data
     public static class AdminCourseDTO {
@@ -152,10 +163,26 @@ public class AdminCoursesController {
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
-        if (!courseRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        Course course = courseRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        
+        // Check if course has any completed orders (should not delete if sold)
+        long orderCount = orderItemRepository.countByCourseId(id);
+        if (orderCount > 0) {
+            throw new IllegalStateException("Cannot delete course: " + orderCount + " orders exist. Please unpublish instead.");
         }
-        courseRepository.deleteById(id);
+        
+        // Clean up cart items referencing this course
+        // (CartItem doesn't have CASCADE DELETE, so we must manually delete)
+        cartItemRepository.deleteByCourseId(id);
+        
+        // Now delete the course
+        // This will cascade delete:
+        // - Sections → Lessons → Quizzes → Questions → Answers
+        // - Enrollments → Course Progress → Lesson Progress
+        // - Quiz Attempts → User Answers
+        courseRepository.delete(course);
+        
         return ResponseEntity.noContent().build();
     }
 
@@ -198,6 +225,66 @@ public class AdminCoursesController {
         course.setEndDate(form.getEndDate() != null ? form.getEndDate().toLocalDate() : null);
         course.setSessionCount(form.getSessionCount());
         course.setPublished(form.getPublished() != null ? form.getPublished() : false);
+    }
+
+    /**
+     * Upload course image to Cloudinary
+     */
+    @Operation(
+        summary = "Upload course image",
+        description = "Uploads a course image to Cloudinary CDN and updates the course imageUrl"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid file format or empty file"),
+        @ApiResponse(responseCode = "404", description = "Course not found"),
+        @ApiResponse(responseCode = "500", description = "Upload failed")
+    })
+    @PostMapping("/{id}/upload-image")
+    public ResponseEntity<?> uploadCourseImage(
+        @PathVariable Long id,
+        @RequestParam("file") MultipartFile file
+    ) {
+        // Find course
+        Course course = courseRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+
+        try {
+            // Upload to Cloudinary
+            String imageUrl = cloudinaryService.uploadCourseImage(file);
+
+            // Update course
+            course.setImageUrl(imageUrl);
+            courseRepository.save(course);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "imageUrl", imageUrl,
+                "message", "Image uploaded successfully"
+            ));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Failed to upload image: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * DTO for image upload response
+     */
+    @Data
+    public static class ImageUploadResponse {
+        private boolean success;
+        private String imageUrl;
+        private String message;
+        private String error;
     }
 }
 

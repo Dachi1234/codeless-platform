@@ -8,6 +8,7 @@ interface AnswerOption {
   optionText: string;
   isCorrect: boolean;
   optionOrder?: number;
+  acceptableAnswers?: string; // For FILL_BLANK: comma-separated acceptable answers
 }
 
 interface Question {
@@ -219,14 +220,12 @@ export class QuizBuilderComponent implements OnInit {
     this.questionForm.answerOptions.splice(index, 1);
   }
 
-  setCorrectAnswer(index: number) {
-    // For multiple choice, only one answer can be correct
+  toggleCorrectAnswer(index: number) {
+    // For MULTIPLE_CHOICE: Allow multiple correct answers (toggle checkbox)
     if (this.questionForm.questionType === 'MULTIPLE_CHOICE') {
-      this.questionForm.answerOptions.forEach((opt, i) => {
-        opt.isCorrect = i === index;
-      });
+      this.questionForm.answerOptions[index].isCorrect = !this.questionForm.answerOptions[index].isCorrect;
     } else if (this.questionForm.questionType === 'TRUE_FALSE') {
-      // For true/false, only two options and one must be correct
+      // For TRUE_FALSE: Only one correct answer (radio behavior)
       this.questionForm.answerOptions.forEach((opt, i) => {
         opt.isCorrect = i === index;
       });
@@ -244,8 +243,13 @@ export class QuizBuilderComponent implements OnInit {
       this.questionForm.answerOptions = [
         { optionText: '', isCorrect: false, optionOrder: 1 }
       ];
+    } else if (this.questionForm.questionType === 'FILL_BLANK') {
+      // FILL_BLANK: Single "option" to hold acceptable answers
+      this.questionForm.answerOptions = [
+        { optionText: 'Fill in the blank', isCorrect: true, optionOrder: 1, acceptableAnswers: '' }
+      ];
     } else {
-      // Fill blank or short answer don't need options
+      // SHORT_ANSWER: No options needed
       this.questionForm.answerOptions = [];
     }
   }
@@ -253,6 +257,10 @@ export class QuizBuilderComponent implements OnInit {
   needsAnswerOptions(): boolean {
     return this.questionForm.questionType === 'MULTIPLE_CHOICE' || 
            this.questionForm.questionType === 'TRUE_FALSE';
+  }
+
+  needsAcceptableAnswers(): boolean {
+    return this.questionForm.questionType === 'FILL_BLANK';
   }
 
   closeBuilder() {

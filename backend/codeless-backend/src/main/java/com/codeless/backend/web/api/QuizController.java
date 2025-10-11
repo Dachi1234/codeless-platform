@@ -77,8 +77,9 @@ public class QuizController {
     @Data
     public static class UserAnswerDTO {
         private Long questionId;
-        private Long selectedOptionId; // For multiple choice
-        private String textAnswer; // For short answer/fill blank
+        private Long selectedOptionId; // For single choice (TRUE_FALSE)
+        private List<Long> selectedOptionIds; // For multiple choice (MULTIPLE_CHOICE)
+        private String textAnswer; // For fill blank
     }
 
     @Data
@@ -100,10 +101,12 @@ public class QuizController {
         private Integer pointsEarned;
         private Integer pointsPossible;
         private String explanation;
-        private Long selectedOptionId;
+        private Long selectedOptionId; // For TRUE_FALSE
+        private List<Long> selectedOptionIds; // For MULTIPLE_CHOICE
         private String selectedOptionText;
-        private String correctOptionText;
+        private List<String> correctOptionTexts; // All correct answers
         private String textAnswer;
+        private String acceptableAnswers; // For FILL_BLANK display
     }
 
     @Data
@@ -243,9 +246,8 @@ public class QuizController {
             boolean isCorrect = false;
 
             // Check answer based on question type
-            if (question.getQuestionType() == QuizQuestion.QuestionType.MULTIPLE_CHOICE ||
-                question.getQuestionType() == QuizQuestion.QuestionType.TRUE_FALSE) {
-                
+            if (question.getQuestionType() == QuizQuestion.QuestionType.TRUE_FALSE) {
+                // TRUE_FALSE: Single selection, check if correct
                 if (answerDto.getSelectedOptionId() != null) {
                     QuizAnswerOption selectedOption = quizAnswerOptionRepository.findById(answerDto.getSelectedOptionId())
                         .orElseThrow(() -> new IllegalArgumentException("Option not found"));
@@ -253,11 +255,51 @@ public class QuizController {
                     userAnswer.setSelectedOption(selectedOption);
                     isCorrect = selectedOption.getIsCorrect();
                 }
-            } else {
-                // For fill blank / short answer - manual grading or simple text match
-                userAnswer.setTextAnswer(answerDto.getTextAnswer());
-                // For now, mark as needs grading (isCorrect = false)
-                isCorrect = false;
+            } else if (question.getQuestionType() == QuizQuestion.QuestionType.MULTIPLE_CHOICE) {
+                // MULTIPLE_CHOICE: Multiple selections, check if ALL are correct
+                if (answerDto.getSelectedOptionIds() != null && !answerDto.getSelectedOptionIds().isEmpty()) {
+                    // Get all correct option IDs for this question
+                    List<Long> correctOptionIds = question.getAnswerOptions().stream()
+                        .filter(QuizAnswerOption::getIsCorrect)
+                        .map(QuizAnswerOption::getId)
+                        .sorted()
+                        .collect(Collectors.toList());
+                    
+                    // Sort user's selections for comparison
+                    List<Long> userSelections = answerDto.getSelectedOptionIds().stream()
+                        .sorted()
+                        .collect(Collectors.toList());
+                    
+                    // Store selections
+                    userAnswer.setSelectedOptionIdsList(userSelections);
+                    
+                    // Check if user selected exactly the correct answers (no more, no less)
+                    isCorrect = correctOptionIds.equals(userSelections);
+                }
+            } else if (question.getQuestionType() == QuizQuestion.QuestionType.FILL_BLANK) {
+                // FILL_BLANK: Check against acceptable answers
+                if (answerDto.getTextAnswer() != null && !answerDto.getTextAnswer().trim().isEmpty()) {
+                    userAnswer.setTextAnswer(answerDto.getTextAnswer());
+                    
+                    // Get acceptable answers from the first answer option
+                    // (For FILL_BLANK, we store acceptable answers in option 0)
+                    if (!question.getAnswerOptions().isEmpty()) {
+                        QuizAnswerOption fillBlankOption = question.getAnswerOptions().get(0);
+                        String acceptableAnswers = fillBlankOption.getAcceptableAnswers();
+                        
+                        if (acceptableAnswers != null && !acceptableAnswers.trim().isEmpty()) {
+                            String userAnswerLower = answerDto.getTextAnswer().trim().toLowerCase();
+                            
+                            // Check if user answer matches any acceptable answer (case-insensitive)
+                            for (String acceptable : acceptableAnswers.split(",")) {
+                                if (acceptable.trim().toLowerCase().equals(userAnswerLower)) {
+                                    isCorrect = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             userAnswer.setIsCorrect(isCorrect);
@@ -368,24 +410,37 @@ public class QuizController {
                     qResult.setIsCorrect(userAnswer.getIsCorrect());
                     qResult.setPointsEarned(userAnswer.getPointsEarned());
 
+                    // For TRUE_FALSE (single selection)
                     if (userAnswer.getSelectedOption() != null) {
                         qResult.setSelectedOptionId(userAnswer.getSelectedOption().getId());
                         qResult.setSelectedOptionText(userAnswer.getSelectedOption().getOptionText());
                     }
 
+                    // For MULTIPLE_CHOICE (multiple selections)
+                    if (userAnswer.getSelectedOptionIds() != null && !userAnswer.getSelectedOptionIds().isEmpty()) {
+                        qResult.setSelectedOptionIds(userAnswer.getSelectedOptionIdsList());
+                    }
+
+                    // For FILL_BLANK
                     if (userAnswer.getTextAnswer() != null) {
                         qResult.setTextAnswer(userAnswer.getTextAnswer());
                     }
 
-                    // Find correct answer for display (if showFeedbackImmediately)
+                    // Show correct answers (if showFeedbackImmediately)
                     if (quiz.getShowFeedbackImmediately()) {
-                        QuizAnswerOption correctOption = question.getAnswerOptions().stream()
-                            .filter(opt -> opt.getIsCorrect())
-                            .findFirst()
-                            .orElse(null);
-                        
-                        if (correctOption != null) {
-                            qResult.setCorrectOptionText(correctOption.getOptionText());
+                        if (question.getQuestionType() == QuizQuestion.QuestionType.FILL_BLANK) {
+                            // Show acceptable answers for fill blank
+                            if (!question.getAnswerOptions().isEmpty()) {
+                                String acceptableAnswers = question.getAnswerOptions().get(0).getAcceptableAnswers();
+                                qResult.setAcceptableAnswers(acceptableAnswers);
+                            }
+                        } else {
+                            // Show all correct options for multiple choice / true-false
+                            List<String> correctTexts = question.getAnswerOptions().stream()
+                                .filter(opt -> opt.getIsCorrect())
+                                .map(QuizAnswerOption::getOptionText)
+                                .collect(Collectors.toList());
+                            qResult.setCorrectOptionTexts(correctTexts);
                         }
                     }
                 } else {

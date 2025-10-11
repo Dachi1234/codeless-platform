@@ -144,5 +144,9 @@ export class AuthService {
   isAdmin(): boolean {
     return this.getUserRoles().includes('ROLE_ADMIN');
   }
+
+  updateCurrentUser(user: any): void {
+    this.currentUser.set(user);
+  }
 }
 

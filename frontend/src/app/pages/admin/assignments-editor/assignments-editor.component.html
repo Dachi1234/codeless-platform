@@ -1,0 +1,280 @@
+<div class="assignments-editor">
+  <div class="editor-header">
+    <div>
+      <h2>Assignments</h2>
+      <p class="subtitle">Manage homework and projects for this live course</p>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <span>➕</span> Create Assignment
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading assignments...</div>
+
+  <div *ngIf="!loading && assignments.length === 0" class="empty-state">
+    <p>📝 No assignments created yet</p>
+    <button class="btn-primary" (click)="openCreateModal()">Create First Assignment</button>
+  </div>
+
+  <div *ngIf="!loading && assignments.length > 0" class="assignments-list">
+    <div *ngFor="let assignment of assignments" class="assignment-card">
+      <div class="assignment-header">
+        <div class="assignment-info">
+          <h3>{{assignment.title}}</h3>
+          <span class="assignment-meta">
+            {{getSessionTitle(assignment.liveSessionId)}}
+          </span>
+        </div>
+        <div class="assignment-actions">
+          <button class="btn-icon" (click)="openGradingModal(assignment)" title="View Submissions">📊</button>
+          <button class="btn-icon" (click)="openEditModal(assignment)" title="Edit">✏️</button>
+          <button class="btn-icon" (click)="deleteAssignment(assignment)" title="Delete">🗑️</button>
+        </div>
+      </div>
+
+      <div class="assignment-body">
+        <div class="assignment-details">
+          <div class="detail-row">
+            <span class="label">📅 Due Date:</span>
+            <span [class.overdue]="isOverdue(assignment.dueDate)">
+              {{formatDueDate(assignment.dueDate)}}
+            </span>
+          </div>
+          <div class="detail-row">
+            <span class="label">📎 Allowed Types:</span>
+            <span class="file-types">{{assignment.allowedFileTypes}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">📦 Max File Size:</span>
+            <span>{{assignment.maxFileSizeMb}} MB</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">🎯 Max Grade:</span>
+            <span>{{assignment.maxGrade}} points</span>
+          </div>
+        </div>
+
+        <div class="assignment-description" *ngIf="assignment.description">
+          <p>{{assignment.description}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Assignment Modal -->
+<div *ngIf="showAssignmentModal" class="modal-overlay" (click)="closeAssignmentModal()">
+  <div class="modal-content modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{editingAssignment ? 'Edit Assignment' : 'Create New Assignment'}}</h3>
+      <button class="btn-close" (click)="closeAssignmentModal()">✖</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Title *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="assignmentForm.title"
+          placeholder="e.g., Week 1 Project: Build a Portfolio"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label>Description *</label>
+        <textarea 
+          [(ngModel)]="assignmentForm.description"
+          placeholder="Assignment instructions and requirements..."
+          rows="4"
+          required></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Due Date & Time *</label>
+          <input 
+            type="datetime-local" 
+            [(ngModel)]="assignmentForm.dueDate"
+            required>
+          <small>Students can submit late (will be marked)</small>
+        </div>
+
+        <div class="form-group">
+          <label>Max Grade (points) *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="assignmentForm.maxGrade"
+            min="1"
+            step="1"
+            required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Max File Size (MB) *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="assignmentForm.maxFileSizeMb"
+            min="1"
+            max="100"
+            step="1"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Link to Session (optional)</label>
+          <select [(ngModel)]="assignmentForm.liveSessionId">
+            <option [ngValue]="undefined">General Assignment</option>
+            <option *ngFor="let session of sessions" [ngValue]="session.id">
+              Session {{session.sessionNumber}}: {{session.title}}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Allowed File Types * (select at least one)</label>
+        <div class="file-type-checkboxes">
+          <label *ngFor="let type of fileTypeOptions" class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [checked]="selectedFileTypes.has(type.value)"
+              (change)="toggleFileType(type.value)">
+            <span>{{type.label}}</span>
+          </label>
+        </div>
+        <small>Selected: {{assignmentForm.allowedFileTypes || 'None'}}</small>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeAssignmentModal()">Cancel</button>
+      <button 
+        class="btn-primary" 
+        (click)="saveAssignment()"
+        [disabled]="saving">
+        {{saving ? 'Saving...' : (editingAssignment ? 'Update Assignment' : 'Create Assignment')}}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Grading Modal -->
+<div *ngIf="showGradingModal" class="modal-overlay" (click)="closeGradingModal()">
+  <div class="modal-content modal-xl" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h3>Submissions: {{viewingAssignment?.title}}</h3>
+        <p class="subtitle">{{submissions.length}} submission(s)</p>
+      </div>
+      <button class="btn-close" (click)="closeGradingModal()">✖</button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="loadingSubmissions" class="loading">Loading submissions...</div>
+
+      <div *ngIf="!loadingSubmissions && submissions.length === 0" class="empty-state-small">
+        <p>📭 No submissions yet</p>
+      </div>
+
+      <div *ngIf="!loadingSubmissions && submissions.length > 0" class="submissions-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>File</th>
+              <th>Submitted</th>
+              <th>Status</th>
+              <th>Grade</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let submission of submissions">
+              <td>
+                <div class="student-info">
+                  <strong>{{submission.user?.fullName}}</strong>
+                  <small>{{submission.user?.email}}</small>
+                </div>
+              </td>
+              <td>
+                <a [href]="submission.fileUrl" target="_blank" class="file-link">
+                  📎 {{submission.fileName}}
+                </a>
+              </td>
+              <td>
+                <div class="submission-time">
+                  {{formatDateTime(submission.submittedAt)}}
+                  <span *ngIf="submission.isLate" class="late-badge">
+                    Late ({{submission.daysLate}} days)
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(submission)">
+                  {{getSubmissionStatus(submission)}}
+                </span>
+              </td>
+              <td>
+                <strong *ngIf="submission.grade !== undefined && submission.grade !== null">
+                  {{submission.grade}} / {{viewingAssignment?.maxGrade}}
+                </strong>
+                <span *ngIf="submission.grade === undefined || submission.grade === null">
+                  Not graded
+                </span>
+              </td>
+              <td>
+                <button 
+                  class="btn-grade" 
+                  (click)="startGrading(submission)"
+                  [disabled]="gradingSubmission?.id === submission.id">
+                  {{submission.grade !== undefined ? 'Edit Grade' : 'Grade'}}
+                </button>
+              </td>
+            </tr>
+
+            <!-- Grading Row -->
+            <tr *ngIf="gradingSubmission" class="grading-row" [class.expanded]="gradingSubmission">
+              <td colspan="6">
+                <div class="grading-form">
+                  <h4>Grading: {{gradingSubmission.user?.fullName}}</h4>
+                  
+                  <div class="grading-inputs">
+                    <div class="form-group">
+                      <label>Grade (0-{{viewingAssignment?.maxGrade}})</label>
+                      <input 
+                        type="number" 
+                        [(ngModel)]="gradeForm.grade"
+                        [min]="0"
+                        [max]="viewingAssignment?.maxGrade || 100"
+                        step="1">
+                    </div>
+
+                    <div class="form-group full-width">
+                      <label>Feedback</label>
+                      <textarea 
+                        [(ngModel)]="gradeForm.feedback"
+                        placeholder="Provide feedback to the student..."
+                        rows="3"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="grading-actions">
+                    <button class="btn-secondary" (click)="cancelGrading()">Cancel</button>
+                    <button class="btn-primary" (click)="submitGrade()">Submit Grade</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeGradingModal()">Close</button>
+    </div>
+  </div>
+</div>
+

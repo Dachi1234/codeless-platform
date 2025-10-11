@@ -110,8 +110,24 @@
             </div>
 
             <div class="answer-section">
-              @if (question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE') {
-                <!-- Multiple Choice / True-False -->
+              @if (question.questionType === 'MULTIPLE_CHOICE') {
+                <!-- Multiple Choice - Checkboxes -->
+                <div class="answer-options">
+                  <small class="hint-text">Select all that apply</small>
+                  @for (option of question.answerOptions; track option.id) {
+                    <label class="answer-option">
+                      <input 
+                        type="checkbox" 
+                        [value]="option.id"
+                        [checked]="isOptionSelected(question.id, option.id)"
+                        (change)="toggleMultipleChoice(question.id, option.id)"
+                      />
+                      <span class="option-content">{{ option.optionText }}</span>
+                    </label>
+                  }
+                </div>
+              } @else if (question.questionType === 'TRUE_FALSE') {
+                <!-- True/False - Radio Buttons -->
                 <div class="answer-options">
                   @for (option of question.answerOptions; track option.id) {
                     <label class="answer-option">

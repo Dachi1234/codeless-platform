@@ -169,6 +169,13 @@ a:hover { text-decoration: underline; }
   color: var(--color-dark);
   font-weight: 600;
   font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.8;
+  }
 }
 
 .user-avatar {

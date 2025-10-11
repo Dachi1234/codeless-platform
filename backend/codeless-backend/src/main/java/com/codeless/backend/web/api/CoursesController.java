@@ -45,7 +45,11 @@ public class CoursesController {
         String[] s = sort.split(",");
         Sort by = s.length == 2 ? Sort.by(Sort.Direction.fromString(s[1]), s[0]) : Sort.by(s[0]);
         Pageable pageable = PageRequest.of(page, size, by);
-        Specification<Course> spec = Specification.where(null);
+        // Only show published courses to public users
+        Specification<Course> spec = Specification.where((root, cq, cb) -> 
+            cb.equal(root.get("published"), true)
+        );
+        
         if (q != null && !q.isBlank()) {
             String like = "%" + q.toLowerCase() + "%";
             spec = spec.and((root, cq, cb) -> cb.or(
@@ -86,6 +90,7 @@ public class CoursesController {
     @GetMapping("/{id}")
     public ResponseEntity<CourseDTO> details(@PathVariable("id") Long id) {
         return courseRepository.findById(id)
+                .filter(course -> course.getPublished() != null && course.getPublished()) // Only show published courses
                 .map(CourseDTO::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

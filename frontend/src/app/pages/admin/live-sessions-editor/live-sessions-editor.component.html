@@ -1,0 +1,217 @@
+<div class="live-sessions-editor">
+  <div class="editor-header">
+    <div>
+      <h2>Live Sessions</h2>
+      <p class="subtitle">Manage Zoom sessions for this live course</p>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <span>➕</span> Add Session
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading sessions...</div>
+
+  <div *ngIf="!loading && sessions.length === 0" class="empty-state">
+    <p>📅 No sessions scheduled yet</p>
+    <button class="btn-primary" (click)="openCreateModal()">Create First Session</button>
+  </div>
+
+  <div *ngIf="!loading && sessions.length > 0" class="sessions-list">
+    <div *ngFor="let session of sessions" class="session-card">
+      <div class="session-header">
+        <div class="session-info">
+          <h3>
+            <span class="session-number">Session {{session.sessionNumber}}</span>
+            {{session.title}}
+          </h3>
+          <span class="status-badge" [ngClass]="getStatusBadgeClass(session.status)">
+            {{session.status}}
+          </span>
+        </div>
+        <div class="session-actions">
+          <button class="btn-icon" (click)="openEditModal(session)" title="Edit">✏️</button>
+          <button class="btn-icon" (click)="deleteSession(session)" title="Delete">🗑️</button>
+        </div>
+      </div>
+
+      <div class="session-body">
+        <div class="session-details">
+          <div class="detail-row">
+            <span class="label">📅 Scheduled:</span>
+            <span>{{formatDateTime(session.scheduledAt)}}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">⏱️ Duration:</span>
+            <span>{{session.durationMinutes}} minutes</span>
+          </div>
+          <div class="detail-row" *ngIf="session.zoomLink">
+            <span class="label">🔗 Zoom:</span>
+            <a [href]="session.zoomLink" target="_blank" class="zoom-link">Join Link</a>
+          </div>
+          <div class="detail-row" *ngIf="session.recordingUrl">
+            <span class="label">🎥 Recording:</span>
+            <a [href]="session.recordingUrl" target="_blank">View Recording</a>
+          </div>
+        </div>
+
+        <div class="session-description" *ngIf="session.description">
+          <p>{{session.description}}</p>
+        </div>
+
+        <!-- Status Update Buttons -->
+        <div class="status-actions">
+          <button 
+            *ngIf="session.status === 'SCHEDULED'"
+            class="btn-status btn-live"
+            (click)="updateSessionStatus(session, 'LIVE')">
+            🔴 Mark as Live
+          </button>
+          <button 
+            *ngIf="session.status === 'LIVE'"
+            class="btn-status btn-completed"
+            (click)="updateSessionStatus(session, 'COMPLETED')">
+            ✅ Mark as Completed
+          </button>
+          <button 
+            *ngIf="session.status === 'SCHEDULED'"
+            class="btn-status btn-cancelled"
+            (click)="updateSessionStatus(session, 'CANCELLED')">
+            ❌ Cancel Session
+          </button>
+        </div>
+
+        <!-- Materials Section -->
+        <div class="materials-section">
+          <h4>📎 Session Materials</h4>
+          
+          <div *ngIf="materials.get(session.id!)?.length === 0" class="no-materials">
+            No materials uploaded yet
+          </div>
+
+          <div *ngIf="materials.get(session.id!)?.length! > 0" class="materials-list">
+            <div *ngFor="let material of materials.get(session.id!)" class="material-item">
+              <span class="file-icon">{{getFileIcon(material.fileType)}}</span>
+              <div class="material-info">
+                <a [href]="material.fileUrl" target="_blank" class="material-name">{{material.fileName}}</a>
+                <span class="material-size">{{formatFileSize(material.fileSizeKb)}}</span>
+              </div>
+              <button class="btn-icon-small" (click)="deleteMaterial(material.id!, session.id!)" title="Delete">🗑️</button>
+            </div>
+          </div>
+
+          <div class="material-upload">
+            <input 
+              type="file" 
+              [id]="'material-file-' + session.id"
+              (change)="onMaterialFileSelected($event)"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.png,.html,.zip">
+            <button 
+              class="btn-secondary"
+              (click)="uploadMaterial(session.id!)"
+              [disabled]="uploadingMaterial">
+              {{ uploadingMaterial ? 'Uploading...' : '📤 Upload Material' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Modal -->
+<div *ngIf="showSessionModal" class="modal-overlay" (click)="closeSessionModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{editingSession ? 'Edit Session' : 'Create New Session'}}</h3>
+      <button class="btn-close" (click)="closeSessionModal()">✖</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Session Number *</label>
+        <input 
+          type="number" 
+          [(ngModel)]="sessionForm.sessionNumber"
+          min="1"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label>Title *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="sessionForm.title"
+          placeholder="e.g., Introduction to React"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea 
+          [(ngModel)]="sessionForm.description"
+          placeholder="Session agenda and topics..."
+          rows="3"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Scheduled Date & Time *</label>
+          <input 
+            type="datetime-local" 
+            [(ngModel)]="sessionForm.scheduledAt"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label>Duration (minutes) *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="sessionForm.durationMinutes"
+            min="15"
+            step="15"
+            required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Zoom Meeting Link *</label>
+        <input 
+          type="url" 
+          [(ngModel)]="sessionForm.zoomLink"
+          placeholder="https://zoom.us/j/123456789"
+          required>
+        <small>Get this from Zoom → Schedule Meeting</small>
+      </div>
+
+      <div class="form-group">
+        <label>Status</label>
+        <select [(ngModel)]="sessionForm.status">
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="LIVE">Live</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+
+      <div class="form-group" *ngIf="editingSession">
+        <label>Recording URL (optional)</label>
+        <input 
+          type="url" 
+          [(ngModel)]="sessionForm.recordingUrl"
+          placeholder="https://zoom.us/rec/...">
+        <small>Add Zoom recording link after session ends</small>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeSessionModal()">Cancel</button>
+      <button 
+        class="btn-primary" 
+        (click)="saveSession()"
+        [disabled]="saving">
+        {{saving ? 'Saving...' : (editingSession ? 'Update Session' : 'Create Session')}}
+      </button>
+    </div>
+  </div>
+</div>
+

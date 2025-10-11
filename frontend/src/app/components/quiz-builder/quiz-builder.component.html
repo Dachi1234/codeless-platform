@@ -72,16 +72,6 @@
               <label>
                 <input 
                   type="checkbox" 
-                  [(ngModel)]="quizForm.randomizeQuestions"
-                />
-                Randomize Questions
-              </label>
-            </div>
-
-            <div class="form-group checkbox-group">
-              <label>
-                <input 
-                  type="checkbox" 
                   [(ngModel)]="quizForm.showFeedbackImmediately"
                 />
                 Show Feedback Immediately
@@ -141,7 +131,14 @@
                     <div class="question-content">
                       <p class="question-text">{{ question.questionText }}</p>
                       
-                      @if (question.answerOptions && question.answerOptions.length > 0) {
+                      @if (question.questionType === 'FILL_BLANK' && question.answerOptions && question.answerOptions.length > 0) {
+                        <!-- Show acceptable answers for FILL_BLANK -->
+                        <div class="fill-blank-answers">
+                          <strong>Acceptable answers:</strong> 
+                          <span class="acceptable-answers-list">{{ question.answerOptions[0].acceptableAnswers }}</span>
+                        </div>
+                      } @else if (question.answerOptions && question.answerOptions.length > 0) {
+                        <!-- Show options for MULTIPLE_CHOICE and TRUE_FALSE -->
                         <div class="answer-options">
                           @for (option of question.answerOptions; track option.id) {
                             <div class="answer-option" [class.correct]="option.isCorrect">
@@ -232,7 +229,7 @@
             ></textarea>
           </div>
 
-          <!-- Answer Options -->
+          <!-- Answer Options for MULTIPLE_CHOICE and TRUE_FALSE -->
           @if (needsAnswerOptions()) {
             <div class="form-group full-width">
               <div class="options-header">
@@ -247,16 +244,30 @@
                 }
               </div>
 
+              @if (questionForm.questionType === 'MULTIPLE_CHOICE') {
+                <small class="hint-text">✓ You can select multiple correct answers</small>
+              }
+
               <div class="answer-options-list">
                 @for (option of questionForm.answerOptions; track $index; let i = $index) {
                   <div class="answer-option-item">
-                    <label class="radio-label">
-                      <input 
-                        type="radio" 
-                        [name]="'correct-' + i"
-                        [checked]="option.isCorrect"
-                        (change)="setCorrectAnswer(i)"
-                      />
+                    <label class="checkbox-label">
+                      @if (questionForm.questionType === 'MULTIPLE_CHOICE') {
+                        <!-- Checkbox for multiple correct answers -->
+                        <input 
+                          type="checkbox" 
+                          [checked]="option.isCorrect"
+                          (change)="toggleCorrectAnswer(i)"
+                        />
+                      } @else {
+                        <!-- Radio for single correct answer (TRUE_FALSE) -->
+                        <input 
+                          type="radio" 
+                          name="correct-option"
+                          [checked]="option.isCorrect"
+                          (change)="toggleCorrectAnswer(i)"
+                        />
+                      }
                       <span class="correct-indicator">Correct</span>
                     </label>
 
@@ -280,6 +291,24 @@
                   </div>
                 }
               </div>
+            </div>
+          }
+
+          <!-- Acceptable Answers for FILL_BLANK -->
+          @if (needsAcceptableAnswers()) {
+            <div class="form-group full-width">
+              <label>Acceptable Answers * (comma-separated)</label>
+              <input 
+                type="text" 
+                [(ngModel)]="questionForm.answerOptions[0].acceptableAnswers"
+                placeholder="Paris,paris,PARIS"
+                class="full-width-input"
+                required
+              />
+              <small class="hint-text">
+                💡 Enter all acceptable answers separated by commas. Case will be ignored when grading.
+                <br>Example: "Paris,paris,PARIS" - all variations will be accepted
+              </small>
             </div>
           }
         </div>

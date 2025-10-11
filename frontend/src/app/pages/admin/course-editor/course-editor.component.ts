@@ -22,6 +22,7 @@ interface CourseForm {
   endDate: string | null;
   sessionCount: number;
   published: boolean;
+  imageUrl?: string;
 }
 
 @Component({
@@ -40,6 +41,9 @@ export class CourseEditorComponent implements OnInit {
   isEditMode = false;
   loading = false;
   saving = false;
+  uploadingImage = false;
+  selectedFile: File | null = null;
+  imagePreview: string | null = null;
 
   form: CourseForm = {
     title: '',
@@ -58,7 +62,8 @@ export class CourseEditorComponent implements OnInit {
     startDate: null,
     endDate: null,
     sessionCount: 0,
-    published: false
+    published: false,
+    imageUrl: ''
   };
 
   ngOnInit(): void {
@@ -93,8 +98,10 @@ export class CourseEditorComponent implements OnInit {
           startDate: course.startDate,
           endDate: course.endDate,
           sessionCount: course.sessionCount,
-          published: course.published
+          published: course.published,
+          imageUrl: course.imageUrl || ''
         };
+        this.imagePreview = course.imageUrl || null;
         this.loading = false;
       },
       error: (err) => {
@@ -123,9 +130,21 @@ export class CourseEditorComponent implements OnInit {
     }
 
     this.saving = true;
+
+    // Prepare form data with proper date formatting for LIVE courses
+    const formData = { ...this.form };
+    
+    // Convert datetime-local strings to ISO format with timezone
+    if (formData.startDate && typeof formData.startDate === 'string') {
+      formData.startDate = new Date(formData.startDate).toISOString();
+    }
+    if (formData.endDate && typeof formData.endDate === 'string') {
+      formData.endDate = new Date(formData.endDate).toISOString();
+    }
+
     const request = this.isEditMode
-      ? this.http.put(`/api/admin/courses/${this.courseId}`, this.form)
-      : this.http.post('/api/admin/courses', this.form);
+      ? this.http.put(`/api/admin/courses/${this.courseId}`, formData)
+      : this.http.post('/api/admin/courses', formData);
 
     request.subscribe({
       next: () => {
@@ -136,9 +155,76 @@ export class CourseEditorComponent implements OnInit {
       error: (err) => {
         console.error('Error saving course:', err);
         this.saving = false;
-        alert('Failed to save course');
+        alert('Failed to save course: ' + (err.error?.message || err.message));
       }
     });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB');
+        return;
+      }
+
+      this.selectedFile = file;
+
+      // Preview image
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        this.imagePreview = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  uploadImage(): void {
+    if (!this.selectedFile) {
+      alert('Please select an image first');
+      return;
+    }
+
+    if (!this.courseId) {
+      alert('Please save the course first before uploading an image');
+      return;
+    }
+
+    this.uploadingImage = true;
+    const formData = new FormData();
+    formData.append('file', this.selectedFile);
+
+    this.http.post<any>(`/api/admin/courses/${this.courseId}/upload-image`, formData).subscribe({
+      next: (response) => {
+        this.uploadingImage = false;
+        this.form.imageUrl = response.imageUrl;
+        this.imagePreview = response.imageUrl;
+        this.selectedFile = null;
+        alert('Image uploaded successfully!');
+      },
+      error: (err) => {
+        console.error('Error uploading image:', err);
+        this.uploadingImage = false;
+        alert('Failed to upload image: ' + (err.error?.error || err.message));
+      }
+    });
+  }
+
+  removeImage(): void {
+    if (confirm('Are you sure you want to remove this image?')) {
+      this.selectedFile = null;
+      this.imagePreview = null;
+      this.form.imageUrl = '';
+    }
   }
 }
 

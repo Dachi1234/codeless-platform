@@ -96,6 +96,7 @@ public class AdminQuizController {
         private String explanation;
         private Integer points;
         private Integer questionOrder;
+        private List<AnswerOptionDTO> answerOptions; // Allow updating answer options
     }
 
     @Data
@@ -104,6 +105,7 @@ public class AdminQuizController {
         private String optionText;
         private Boolean isCorrect;
         private Integer optionOrder;
+        private String acceptableAnswers; // For FILL_BLANK: "Paris,paris,PARIS"
     }
 
     @Data
@@ -135,6 +137,7 @@ public class AdminQuizController {
                         optDto.setOptionText(option.getOptionText());
                         optDto.setIsCorrect(option.getIsCorrect());
                         optDto.setOptionOrder(option.getOptionOrder());
+                        optDto.setAcceptableAnswers(option.getAcceptableAnswers());
                         return optDto;
                     })
                     .collect(Collectors.toList()));
@@ -246,6 +249,7 @@ public class AdminQuizController {
                 option.setQuestion(savedQuestion);
                 option.setOptionText(optDto.getOptionText());
                 option.setIsCorrect(optDto.getIsCorrect() != null ? optDto.getIsCorrect() : false);
+                option.setAcceptableAnswers(optDto.getAcceptableAnswers()); // For FILL_BLANK
                 
                 if (optDto.getOptionOrder() == null) {
                     Integer maxOptOrder = quizAnswerOptionRepository.findMaxOptionOrderByQuestionId(savedQuestion.getId()).orElse(0);
@@ -293,7 +297,7 @@ public class AdminQuizController {
     @PutMapping("/questions/{id}")
     @Transactional
     public ResponseEntity<QuestionResponseDTO> updateQuestion(@PathVariable Long id, @RequestBody QuestionUpdateDTO dto) {
-        QuizQuestion question = quizQuestionRepository.findById(id)
+        QuizQuestion question = quizQuestionRepository.findByIdWithOptions(id)
             .orElseThrow(() -> new IllegalArgumentException("Question not found"));
 
         if (dto.getQuestionType() != null) {
@@ -303,6 +307,24 @@ public class AdminQuizController {
         if (dto.getExplanation() != null) question.setExplanation(dto.getExplanation());
         if (dto.getPoints() != null) question.setPoints(dto.getPoints());
         if (dto.getQuestionOrder() != null) question.setQuestionOrder(dto.getQuestionOrder());
+
+        // Update answer options if provided
+        if (dto.getAnswerOptions() != null) {
+            // Remove all existing options
+            question.getAnswerOptions().clear();
+            quizAnswerOptionRepository.flush();
+            
+            // Add new/updated options
+            for (AnswerOptionDTO optDto : dto.getAnswerOptions()) {
+                QuizAnswerOption option = new QuizAnswerOption();
+                option.setQuestion(question);
+                option.setOptionText(optDto.getOptionText());
+                option.setIsCorrect(optDto.getIsCorrect() != null ? optDto.getIsCorrect() : false);
+                option.setOptionOrder(optDto.getOptionOrder() != null ? optDto.getOptionOrder() : 1);
+                option.setAcceptableAnswers(optDto.getAcceptableAnswers()); // For FILL_BLANK
+                question.getAnswerOptions().add(option);
+            }
+        }
 
         QuizQuestion saved = quizQuestionRepository.save(question);
         QuizQuestion reloaded = quizQuestionRepository.findByIdWithOptions(saved.getId())
@@ -336,6 +358,7 @@ public class AdminQuizController {
         option.setQuestion(question);
         option.setOptionText(dto.getOptionText());
         option.setIsCorrect(dto.getIsCorrect() != null ? dto.getIsCorrect() : false);
+        option.setAcceptableAnswers(dto.getAcceptableAnswers()); // For FILL_BLANK
 
         if (dto.getOptionOrder() == null) {
             Integer maxOrder = quizAnswerOptionRepository.findMaxOptionOrderByQuestionId(questionId).orElse(0);
@@ -351,6 +374,7 @@ public class AdminQuizController {
         response.setOptionText(saved.getOptionText());
         response.setIsCorrect(saved.getIsCorrect());
         response.setOptionOrder(saved.getOptionOrder());
+        response.setAcceptableAnswers(saved.getAcceptableAnswers());
 
         return ResponseEntity.ok(response);
     }
@@ -367,6 +391,7 @@ public class AdminQuizController {
         if (dto.getOptionText() != null) option.setOptionText(dto.getOptionText());
         if (dto.getIsCorrect() != null) option.setIsCorrect(dto.getIsCorrect());
         if (dto.getOptionOrder() != null) option.setOptionOrder(dto.getOptionOrder());
+        if (dto.getAcceptableAnswers() != null) option.setAcceptableAnswers(dto.getAcceptableAnswers());
 
         QuizAnswerOption saved = quizAnswerOptionRepository.save(option);
 
@@ -375,6 +400,7 @@ public class AdminQuizController {
         response.setOptionText(saved.getOptionText());
         response.setIsCorrect(saved.getIsCorrect());
         response.setOptionOrder(saved.getOptionOrder());
+        response.setAcceptableAnswers(saved.getAcceptableAnswers());
 
         return ResponseEntity.ok(response);
     }

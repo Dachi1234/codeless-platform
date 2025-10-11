@@ -590,8 +590,8 @@ export class CheckoutComponent implements OnInit {
         this.cartService.clearCart().subscribe({
           next: () => {
             this.isProcessing = false;
-            // Navigate to my courses with success message
-            this.router.navigate(['/my-courses'], {
+            // Navigate to dashboard with success message
+            this.router.navigate(['/dashboard'], {
               queryParams: { orderSuccess: 'true' }
             });
           },

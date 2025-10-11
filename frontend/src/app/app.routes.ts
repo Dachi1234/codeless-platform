@@ -4,9 +4,9 @@ import { CoursesComponent } from './pages/courses/courses.component';
 import { CheckoutComponent } from './pages/checkout/checkout.component';
 import { CourseDetailComponent } from './pages/course-detail/course-detail.component';
 import { CourseLearnComponent } from './pages/course-learn/course-learn.component';
+import { LiveCourseViewComponent } from './pages/live-course-view/live-course-view.component';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
-import { MyCoursesComponent } from './pages/my-courses/my-courses.component';
 import { CartComponent } from './pages/cart/cart.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { MyOrdersComponent } from './pages/my-orders/my-orders.component';
@@ -17,6 +17,8 @@ import { AdminDashboardComponent } from './pages/admin/admin-dashboard/admin-das
 import { AdminCoursesComponent } from './pages/admin/admin-courses/admin-courses.component';
 import { CourseEditorComponent } from './pages/admin/course-editor/course-editor.component';
 import { CurriculumEditorComponent } from './pages/admin/curriculum-editor/curriculum-editor.component';
+import { LiveSessionsEditorComponent } from './pages/admin/live-sessions-editor/live-sessions-editor.component';
+import { AssignmentsEditorComponent } from './pages/admin/assignments-editor/assignments-editor.component';
 import { AdminUsersComponent } from './pages/admin/admin-users/admin-users.component';
 import { AdminOrdersComponent } from './pages/admin/admin-orders/admin-orders.component';
 import { AdminEnrollmentsComponent } from './pages/admin/admin-enrollments/admin-enrollments.component';
@@ -28,10 +30,10 @@ export const routes: Routes = [
   { path: 'courses', component: CoursesComponent },
   { path: 'courses/:id', component: CourseDetailComponent },
   { path: 'courses/:id/learn', component: CourseLearnComponent, canActivate: [authGuard] },
+  { path: 'courses/:id/live', component: LiveCourseViewComponent, canActivate: [authGuard] },
   { path: 'cart', component: CartComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'my-orders', component: MyOrdersComponent, canActivate: [authGuard] },
-  { path: 'my-courses', component: MyCoursesComponent, canActivate: [authGuard] },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'checkout', component: CheckoutComponent, canActivate: [authGuard] },
@@ -46,6 +48,8 @@ export const routes: Routes = [
       { path: 'courses/create', component: CourseEditorComponent },
       { path: 'courses/:id/edit', component: CourseEditorComponent },
       { path: 'courses/:id/curriculum', component: CurriculumEditorComponent },
+      { path: 'courses/:id/sessions', component: LiveSessionsEditorComponent },
+      { path: 'courses/:id/assignments', component: AssignmentsEditorComponent },
       { path: 'users', component: AdminUsersComponent },
       { path: 'orders', component: AdminOrdersComponent },
       { path: 'enrollments', component: AdminEnrollmentsComponent },

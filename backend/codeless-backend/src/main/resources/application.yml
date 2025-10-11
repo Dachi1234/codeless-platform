@@ -57,3 +57,8 @@ paypal:
   webhook-id: ${PAYPAL_WEBHOOK_ID:}
   base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
 
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+

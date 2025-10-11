@@ -179,6 +179,14 @@
     flex-direction: column;
     gap: 12px;
 
+    .hint-text {
+      display: block;
+      margin-bottom: 8px;
+      color: #6b7280;
+      font-size: 0.875rem;
+      font-style: italic;
+    }
+
     .answer-option {
       display: flex;
       align-items: center;

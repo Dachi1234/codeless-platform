@@ -74,30 +74,80 @@ import { UpcomingCardComponent } from '../../components/upcoming-card/upcoming-c
           <h2 class="h-1">Upcoming Live Courses</h2>
           <a routerLink="/courses" class="upcoming__view">View All Live Courses</a>
         </div>
-        <app-upcoming-card 
-          title="Digital Marketing Masterclass - LIVE" 
-          instructor="David Rodriguez" 
-          start="2/15/2024" 
-          duration="6 weeks" 
-          price="$149" 
-          spots="18 spots left">
-        </app-upcoming-card>
-        <app-upcoming-card 
-          title="Live Coding Bootcamp - Full Stack" 
-          instructor="Team of Senior Developers" 
-          start="3/1/2024" 
-          duration="12 weeks" 
-          price="$599" 
-          spots="7 spots left">
-        </app-upcoming-card>
+        
+        @if (upcomingLive$ | async; as liveCourses) {
+          @if (liveCourses.length > 0) {
+            <div class="cards">
+              <app-course-card *ngFor="let c of liveCourses" [course]="c"></app-course-card>
+            </div>
+          } @else {
+            <div class="empty-state">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <h3>No Upcoming Live Courses</h3>
+              <p>Check back soon for new live sessions and workshops!</p>
+              <a routerLink="/courses" class="btn-primary">Browse All Courses</a>
+            </div>
+          }
+        }
       </div>
     </section>
   `,
-  styles: ``
+  styles: `
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: #F9FAFB;
+      border-radius: 16px;
+      margin-top: 20px;
+    }
+
+    .empty-state svg {
+      margin: 0 auto 20px;
+      display: block;
+    }
+
+    .empty-state h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1F2937;
+      margin: 0 0 12px 0;
+    }
+
+    .empty-state p {
+      font-size: 16px;
+      color: #6B7280;
+      margin: 0 0 24px 0;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 24px;
+      background: #5A8DEE;
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #4F46E5;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(90, 141, 238, 0.3);
+    }
+  `
 })
 export class HomeComponent {
   private readonly service = inject(CourseService);
+  
   featured$: Observable<Course[]> = this.service.list().pipe(
     map(list => list.slice(0, 3))
+  );
+
+  upcomingLive$: Observable<Course[]> = this.service.list().pipe(
+    map(list => list.filter(c => c.kind === 'LIVE').slice(0, 3))
   );
 }

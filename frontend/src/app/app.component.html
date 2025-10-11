@@ -39,12 +39,12 @@
       </a>
 
       <ng-container *ngIf="authService.isAuthenticated(); else notLoggedIn">
-        <span class="user-name" *ngIf="authService.currentUser()?.fullName">
+        <a routerLink="/dashboard" class="user-name" *ngIf="authService.currentUser()?.fullName">
           <img src="https://ui-avatars.com/api/?name={{ authService.currentUser()?.fullName }}&background=FD8D6E&color=fff" 
                alt="{{ authService.currentUser()?.fullName }}" 
                class="user-avatar">
           {{ authService.currentUser()?.fullName }}
-        </span>
+        </a>
         <button class="btn-secondary" (click)="logout()">Logout</button>
       </ng-container>
       <ng-template #notLoggedIn>

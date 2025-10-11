@@ -73,13 +73,17 @@ export class AdminCoursesComponent implements OnInit {
   }
 
   togglePublish(course: AdminCourse): void {
-    this.http.patch(`/api/admin/courses/${course.id}/publish`, { published: !course.published }).subscribe({
+    const newStatus = !course.published;
+    console.log(`Toggling publish status for course ${course.id} from ${course.published} to ${newStatus}`);
+    
+    this.http.patch(`/api/admin/courses/${course.id}/publish`, { published: newStatus }).subscribe({
       next: () => {
-        course.published = !course.published;
+        console.log('✅ Publish status updated successfully');
+        course.published = newStatus;
       },
       error: (err) => {
-        console.error('Error toggling publish status:', err);
-        alert('Failed to update publish status');
+        console.error('❌ Error toggling publish status:', err);
+        alert('Failed to update publish status: ' + (err.error?.message || err.message));
       }
     });
   }

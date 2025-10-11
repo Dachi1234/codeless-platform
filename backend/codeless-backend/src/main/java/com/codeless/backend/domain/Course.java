@@ -121,6 +121,15 @@ public class Course {
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    // Convenience methods for review system
+    public BigDecimal getAverageRating() {
+        return this.rating;
+    }
+
+    public void setAverageRating(BigDecimal averageRating) {
+        this.rating = averageRating;
+    }
 }
 
 

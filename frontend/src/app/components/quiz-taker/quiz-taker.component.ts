@@ -31,8 +31,9 @@ interface Quiz {
 
 interface UserAnswer {
   questionId: number;
-  selectedOptionId?: number;
-  textAnswer?: string;
+  selectedOptionId?: number; // For TRUE_FALSE (single selection)
+  selectedOptionIds?: number[]; // For MULTIPLE_CHOICE (multiple selections)
+  textAnswer?: string; // For FILL_BLANK
 }
 
 @Component({
@@ -162,6 +163,31 @@ export class QuizTakerComponent implements OnInit, OnDestroy {
     return this.userAnswers.get(questionId)?.textAnswer || '';
   }
 
+  // Multiple Choice - Toggle checkbox selection
+  toggleMultipleChoice(questionId: number, optionId: number) {
+    const currentAnswer = this.userAnswers.get(questionId);
+    let selectedIds = currentAnswer?.selectedOptionIds || [];
+    
+    if (selectedIds.includes(optionId)) {
+      // Remove if already selected
+      selectedIds = selectedIds.filter(id => id !== optionId);
+    } else {
+      // Add if not selected
+      selectedIds = [...selectedIds, optionId];
+    }
+
+    this.userAnswers.set(questionId, {
+      questionId,
+      selectedOptionIds: selectedIds
+    });
+  }
+
+  // Check if an option is selected in multiple choice
+  isOptionSelected(questionId: number, optionId: number): boolean {
+    const answer = this.userAnswers.get(questionId);
+    return answer?.selectedOptionIds?.includes(optionId) || false;
+  }
+
   nextQuestion() {
     if (this.currentQuestionIndex < this.quiz!.questions.length - 1) {
       this.currentQuestionIndex++;
@@ -179,11 +205,25 @@ export class QuizTakerComponent implements OnInit, OnDestroy {
   }
 
   isQuestionAnswered(questionId: number): boolean {
-    return this.userAnswers.has(questionId);
+    const answer = this.userAnswers.get(questionId);
+    if (!answer) return false;
+    
+    // For multiple choice, at least one option must be selected
+    if (answer.selectedOptionIds !== undefined) {
+      return answer.selectedOptionIds.length > 0;
+    }
+    
+    return true;
   }
 
   getAnsweredCount(): number {
-    return this.userAnswers.size;
+    let count = 0;
+    this.userAnswers.forEach((answer, questionId) => {
+      if (this.isQuestionAnswered(questionId)) {
+        count++;
+      }
+    });
+    return count;
   }
 
   canSubmit(): boolean {

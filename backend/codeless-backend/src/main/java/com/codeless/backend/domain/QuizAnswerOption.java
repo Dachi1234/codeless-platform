@@ -25,5 +25,10 @@ public class QuizAnswerOption {
 
     @Column(name = "option_order", nullable = false)
     private Integer optionOrder;
+
+    // For FILL_BLANK questions: comma-separated acceptable answers
+    // Example: "Paris,paris,PARIS" - case variations accepted
+    @Column(name = "acceptable_answers", columnDefinition = "TEXT")
+    private String acceptableAnswers;
 }
 
