@@ -1,0 +1,56 @@
+# Cloud Build configuration for automatic deployment to Cloud Run
+# Triggered on push to main branch
+
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/codeless-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/codeless-backend:latest'
+      - '-f'
+      - 'backend/codeless-backend/Dockerfile.cloudrun'
+      - 'backend/codeless-backend'
+    timeout: 1200s  # 20 minutes
+
+  # Step 2: Push the image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/codeless-backend:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/codeless-backend:latest'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'codeless-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/codeless-backend:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+# Images to be pushed to Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/codeless-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/codeless-backend:latest'
+
+# Build timeout (30 minutes total)
+timeout: 1800s
+
+# Build options
+options:
+  machineType: 'N1_HIGHCPU_8'  # Use a faster machine for quicker builds
+  logging: CLOUD_LOGGING_ONLY
+
