@@ -63,10 +63,11 @@ A full-stack e-learning platform built with **Angular 19** and **Spring Boot**, 
 - PayPal REST API
 
 **Deployment:**
-- Frontend: Vercel
-- Backend: Render.com
-- Database: Neon/Supabase
-- Media: Cloudinary
+- Frontend: Vercel (auto-deploy from GitHub)
+- Backend: Google Cloud Run (CI/CD via Cloud Build)
+- Database: Neon PostgreSQL (managed)
+- Media: Cloudinary CDN
+- CI/CD: Automated deployment pipeline
 
 ---
 

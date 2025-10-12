@@ -2,6 +2,8 @@
 
 Welcome to the organized documentation for the Codeless E-Learning Platform!
 
+**📖 Quick Reference**: See [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) for complete organization guide.
+
 ---
 
 ## 📁 **Documentation Structure**
@@ -11,7 +13,7 @@ Welcome to the organized documentation for the Codeless E-Learning Platform!
 |------|---------|
 | [`README.md`](../README.md) | Project overview and quick start |
 | [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) | Current feature status and progress |
-| [`PLACEHOLDER_FUNCTIONALITY.md`](../PLACEHOLDER_FUNCTIONALITY.md) | Incomplete features tracker |
+| [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) 🆕 | Complete project organization guide |
 
 ---
 
@@ -19,10 +21,13 @@ Welcome to the organized documentation for the Codeless E-Learning Platform!
 | File | Description |
 |------|-------------|
 | [`SETUP_INSTRUCTIONS.md`](setup/SETUP_INSTRUCTIONS.md) | How to run locally (backend + frontend) |
-| [`DEPLOYMENT_GUIDE.md`](setup/DEPLOYMENT_GUIDE.md) | Deploy to production (Vercel + Render + Neon) |
-| [`CLOUDINARY_SETUP.md`](setup/CLOUDINARY_SETUP.md) | Configure Cloudinary for image uploads (Production) |
-| [`ENV_SETUP_GUIDE.md`](setup/ENV_SETUP_GUIDE.md) ⭐ NEW | Local environment variables setup (.env file) |
-| [`ENV_VS_RENDER.md`](setup/ENV_VS_RENDER.md) ⭐ NEW | Why .env won't conflict with Render (explainer) |
+| [`CLOUD_RUN_CI_CD.md`](setup/CLOUD_RUN_CI_CD.md) ⭐ | CI/CD pipeline with Cloud Build (current) |
+| [`CLOUD_RUN_DEPLOYMENT.md`](setup/CLOUD_RUN_DEPLOYMENT.md) ⭐ | Manual Cloud Run deployment guide |
+| [`CLOUDINARY_SETUP.md`](setup/CLOUDINARY_SETUP.md) | Configure Cloudinary for image uploads |
+| [`ENV_SETUP_GUIDE.md`](setup/ENV_SETUP_GUIDE.md) | Local environment variables setup (.env file) |
+| [`MANUAL_TESTING_GUIDE.md`](setup/MANUAL_TESTING_GUIDE.md) 🆕 | Complete testing checklist |
+| [`PRE_PUSH_CHECKLIST.md`](setup/PRE_PUSH_CHECKLIST.md) 🆕 | Pre-deployment security checklist |
+| [`DEPLOYMENT_GUIDE.md`](setup/DEPLOYMENT_GUIDE.md) | Legacy Render deployment (archived) |
 
 ---
 
@@ -35,9 +40,9 @@ Welcome to the organized documentation for the Codeless E-Learning Platform!
 **What's Covered:**
 - Frontend architecture (Angular 19, Standalone components)
 - Backend architecture (Spring Boot 3, REST APIs)
-- Database schema (PostgreSQL, 20+ tables)
+- Database schema (PostgreSQL, 25+ tables)
 - Authentication & Authorization (JWT, role-based)
-- Deployment architecture (Vercel + Render + Neon)
+- Deployment architecture (Vercel + Cloud Run + Neon)
 
 ---
 
@@ -68,6 +73,8 @@ Welcome to the organized documentation for the Codeless E-Learning Platform!
 |------|-------------|
 | [`PRIORITY_ROADMAP.md`](planning/PRIORITY_ROADMAP.md) | Current priorities and timeline |
 | [`BACKLOG.md`](planning/BACKLOG.md) | Feature backlog and future ideas |
+| [`LIVE_COURSES_BACKLOG.md`](planning/LIVE_COURSES_BACKLOG.md) | Live courses future enhancements |
+| [`PLACEHOLDER_FUNCTIONALITY.md`](planning/PLACEHOLDER_FUNCTIONALITY.md) 🆕 | Temporary implementations tracker |
 
 ---
 
@@ -97,7 +104,7 @@ Old and obsolete documentation is moved to [`archive/`](../archive/) for referen
 → See [`docs/setup/SETUP_INSTRUCTIONS.md`](setup/SETUP_INSTRUCTIONS.md)
 
 **...deploy to production**
-→ See [`docs/setup/DEPLOYMENT_GUIDE.md`](setup/DEPLOYMENT_GUIDE.md)
+→ See [`docs/setup/CLOUD_RUN_CI_CD.md`](setup/CLOUD_RUN_CI_CD.md) (current deployment)
 
 **...understand the architecture**
 → See [`docs/architecture/TECHNICAL_ARCHITECTURE.md`](architecture/TECHNICAL_ARCHITECTURE.md)
@@ -120,11 +127,13 @@ Old and obsolete documentation is moved to [`archive/`](../archive/) for referen
 
 | Category | Files | Status |
 |----------|-------|--------|
-| Setup | 5 | ✅ Complete |
+| Setup | 8 | ✅ Complete |
 | Architecture | 2 | ✅ Complete |
 | Features | 9 | ✅ Complete |
-| Planning | 2 | ✅ Complete |
+| Planning | 4 | ✅ Complete |
 | Updates | 10+ | 🔄 Ongoing |
+
+**Last Major Update**: October 12, 2025 - Project restructuring and Cloud Run migration complete
 
 ---
 

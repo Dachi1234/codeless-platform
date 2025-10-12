@@ -13,14 +13,16 @@
 | Component | Platform | Status | URL |
 |-----------|----------|--------|-----|
 | **Frontend** | Vercel | 🟢 LIVE | https://codeless.digital |
-| **Backend** | Render | 🟢 LIVE | https://codeless-platform.onrender.com |
+| **Backend** | Google Cloud Run | 🟢 LIVE | https://codeless-backend-231098067761.europe-west1.run.app |
 | **Database** | Neon (PostgreSQL) | 🟢 LIVE | Cloud (Secure) |
+| **Media CDN** | Cloudinary | 🟢 LIVE | Cloud-hosted |
 | **Repository** | GitHub | 🟢 PUBLIC | https://github.com/Dachi1234/codeless-platform |
 
 **🌐 CUSTOM DOMAIN:** https://codeless.digital (Live!)  
 **🌍 PUBLIC ACCESS:** Anyone can visit and use the platform!  
 **🔒 SECURITY:** All secrets in environment variables, CORS properly configured  
-**💰 COST:** 100% free tier (Vercel + Render + Neon)  
+**💰 COST:** Free tier (Vercel + Cloud Run + Neon + Cloudinary)  
+**🚀 CI/CD:** Auto-deploy from GitHub → Cloud Build → Cloud Run  
 **✅ ALL FEATURES WORKING:** Login, Registration, Enrollment, Checkout, Progress Tracking
 
 ---
@@ -340,9 +342,10 @@
 
 ### **Deployment**
 - ✅ Frontend: Vercel (auto-deploy on Git push)
-- ✅ Backend: Render (Docker, auto-deploy)
+- ✅ Backend: Google Cloud Run (Docker, CI/CD via Cloud Build)
 - ✅ Database: Neon (managed PostgreSQL)
-- ✅ GitHub: Version control
+- ✅ Media CDN: Cloudinary (image & file hosting)
+- ✅ GitHub: Version control with automated deployments
 - ✅ Environment variables (secure)
 - ✅ HTTPS (SSL certificates)
 
@@ -359,9 +362,10 @@
 
 ### **Performance**
 - ✅ Frontend: Fast (Angular SSR not needed for now)
-- ✅ Backend: Good (Render free tier, may sleep after inactivity)
+- ✅ Backend: Excellent (Cloud Run scales automatically)
 - ✅ Database: Fast (Neon pooling)
-- ⚠️ First load: Render cold start (10-15s if sleeping)
+- ✅ Cold starts: Minimal (2-3 seconds with Cloud Run)
+- ✅ Auto-scaling: Scales to zero when idle, instant scale-up
 
 ### **Security**
 - ✅ Passwords hashed (BCrypt)
@@ -369,8 +373,8 @@
 - ✅ CORS configured
 - ✅ SQL injection protected (JPA)
 - ✅ XSS protection (Angular sanitization)
-- ⚠️ No rate limiting (can be added)
-- ⚠️ No HTTPS on backend (Render provides it)
+- ⚠️ No rate limiting (can be added via Cloud Armor)
+- ✅ HTTPS enabled (Cloud Run provides SSL)
 
 ---
 
@@ -648,9 +652,9 @@
 - **Database Migrations**: 19 (V19 - Live Sessions, Materials, Assignments, Submissions)
 - **API Endpoints**: 88+ (added 28 today for Live Courses)
 - **Features**: 90+ working
-- **Deployment Time**: < 5 minutes (auto)
-- **Cost**: $0/month (free tiers)
-- **Uptime**: 24/7 (with Render cold starts)
+- **Deployment Time**: 5-8 minutes (auto via CI/CD)
+- **Cost**: Free tier (within limits)
+- **Uptime**: 24/7 with auto-scaling
 - **API Documentation**: ✅ Swagger/OpenAPI available (all 88 endpoints)
 
 ---
@@ -725,7 +729,7 @@ A complete **Live Courses** system enabling real-time, instructor-led learning w
 
 ### **Minor Issues:**
 - ⚠️ Responsive design needs improvement (mobile layout issues)
-- ⚠️ Render backend has cold start delay (~10-15s after inactivity)
+- ✅ Backend performance: Excellent with Cloud Run (2-3s cold starts)
 - ⚠️ TinyMCE API key is in code (acceptable - client-side, domain-restricted)
 
 ### **Not Yet Implemented:**

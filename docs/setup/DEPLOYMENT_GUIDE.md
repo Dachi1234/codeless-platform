@@ -1,6 +1,9 @@
 # 🚀 Deployment Guide - Codeless E-Learning Platform
 
 **Last Updated**: October 9, 2025  
+**⚠️ NOTE**: This guide covers Render deployment. The project has since moved to **Google Cloud Run** with automated CI/CD.  
+**📚 Current Deployment**: See `CLOUD_RUN_DEPLOYMENT.md` and `CLOUD_RUN_CI_CD.md` for current setup.
+
 **Deployment Stack**: 100% Free Tier  
 **Estimated Setup Time**: 45-60 minutes
 
