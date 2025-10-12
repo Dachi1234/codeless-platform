@@ -47,9 +47,8 @@ logs/
 *.db
 *.sqlite
 
-# Cloud Run deployment files (keep local only)
-backend/codeless-backend/Dockerfile.cloudrun
-backend/codeless-backend/.gcloudignore
+# Note: Cloud Run files are now committed for CI/CD
+# Deployment scripts kept local (manual deployment only when needed)
 cloud-run-setup.sh
 cloud-run-setup.ps1
 
