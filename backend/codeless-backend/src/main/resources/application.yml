@@ -43,8 +43,10 @@ security:
   jwt:
     # Base64-encoded 256-bit secret; override via env SECURITY_JWT_SECRET
     secret: ${SECURITY_JWT_SECRET:ZmFrZS1kZXYtc2VjcmV0LXNob3VsZC1iZS1lbmNyeXB0ZWQ=}
-    # Access token expiry (seconds)
-    expiration-seconds: ${SECURITY_JWT_EXPIRATION_SECONDS:3600}
+    # Short session expiry (seconds) - 14400 = 4 hours (default, without "Remember Me")
+    expiration-seconds: ${SECURITY_JWT_EXPIRATION_SECONDS:14400}
+    # Extended session expiry (seconds) - 1209600 = 14 days (with "Remember Me")
+    extended-expiration-seconds: ${SECURITY_JWT_EXTENDED_EXPIRATION_SECONDS:1209600}
     # Allowed clock skew for token validation (seconds)
     clock-skew-seconds: ${SECURITY_JWT_CLOCK_SKEW_SECONDS:30}
 

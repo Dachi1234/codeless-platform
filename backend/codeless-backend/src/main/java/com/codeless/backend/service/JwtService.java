@@ -15,25 +15,41 @@ import java.util.Map;
 public class JwtService {
     private final SecretKey key;
     private final long expirationSeconds;
+    private final long extendedExpirationSeconds;
     private final long allowedClockSkewSeconds;
 
     public JwtService(
             @Value("${security.jwt.secret:ZmFrZS1kZXYtc2VjcmV0LXNob3VsZC1iZS1lbmNyeXB0ZWQ=}") String base64Secret,
-            @Value("${security.jwt.expiration-seconds:3600}") long expirationSeconds,
+            @Value("${security.jwt.expiration-seconds:14400}") long expirationSeconds,
+            @Value("${security.jwt.extended-expiration-seconds:1209600}") long extendedExpirationSeconds,
             @Value("${security.jwt.clock-skew-seconds:30}") long allowedClockSkewSeconds
     ) {
         this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
         this.expirationSeconds = expirationSeconds;
+        this.extendedExpirationSeconds = extendedExpirationSeconds;
         this.allowedClockSkewSeconds = allowedClockSkewSeconds;
     }
 
+    /**
+     * Generate token with default expiration (4 hours)
+     */
     public String generateToken(String subject, Map<String, Object> claims) {
+        return generateToken(subject, claims, false);
+    }
+
+    /**
+     * Generate token with custom expiration based on rememberMe flag
+     * @param rememberMe if true, uses extended expiration (14 days), otherwise short expiration (4 hours)
+     */
+    public String generateToken(String subject, Map<String, Object> claims, boolean rememberMe) {
         Instant now = Instant.now();
+        long expiration = rememberMe ? extendedExpirationSeconds : expirationSeconds;
+        
         return Jwts.builder()
                 .subject(subject)
                 .claims(claims)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(expirationSeconds)))
+                .expiration(Date.from(now.plusSeconds(expiration)))
                 .signWith(key)
                 .compact();
     }

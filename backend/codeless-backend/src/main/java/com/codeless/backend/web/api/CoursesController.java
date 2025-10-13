@@ -42,13 +42,43 @@ public class CoursesController {
     ) {
         // Limit page size to prevent abuse
         if (size > 100) size = 100;
+        
+        // Handle sorting with special case for rating (nulls should be last)
+        Sort by;
         String[] s = sort.split(",");
-        Sort by = s.length == 2 ? Sort.by(Sort.Direction.fromString(s[1]), s[0]) : Sort.by(s[0]);
-        Pageable pageable = PageRequest.of(page, size, by);
-        // Only show published courses to public users
+        
+        // Build specification first
         Specification<Course> spec = Specification.where((root, cq, cb) -> 
             cb.equal(root.get("published"), true)
         );
+        
+        // Handle rating sort specially with manual ordering in the specification
+        if (s.length == 2 && "rating".equals(s[0])) {
+            Sort.Direction direction = Sort.Direction.fromString(s[1]);
+            final boolean desc = direction == Sort.Direction.DESC;
+            
+            // Add custom ordering that handles nulls properly
+            spec = spec.and((root, query, cb) -> {
+                // Use COALESCE to replace nulls with -1 for DESC (so they sort last)
+                // or with 999 for ASC (so they sort last)
+                jakarta.persistence.criteria.Expression<Number> ratingExpr = desc 
+                    ? cb.coalesce(root.get("rating"), -1)
+                    : cb.coalesce(root.get("rating"), 999);
+                    
+                if (desc) {
+                    query.orderBy(cb.desc(ratingExpr), cb.asc(root.get("title")));
+                } else {
+                    query.orderBy(cb.asc(ratingExpr), cb.asc(root.get("title")));
+                }
+                return null; // This spec doesn't add WHERE conditions, just ORDER BY
+            });
+            by = Sort.unsorted(); // Don't use Pageable sorting, we handle it in spec
+        } else {
+            // Default sorting
+            by = s.length == 2 ? Sort.by(Sort.Direction.fromString(s[1]), s[0]) : Sort.by(s[0]);
+        }
+        
+        Pageable pageable = PageRequest.of(page, size, by);
         
         if (q != null && !q.isBlank()) {
             String like = "%" + q.toLowerCase() + "%";
@@ -94,6 +124,16 @@ public class CoursesController {
                 .map(CourseDTO::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @io.swagger.v3.oas.annotations.Operation(
+            summary = "Get distinct course categories",
+            description = "Returns a list of all unique course categories from published courses"
+    )
+    @GetMapping("/categories")
+    public ResponseEntity<List<String>> getCategories() {
+        List<String> categories = courseRepository.findDistinctCategories();
+        return ResponseEntity.ok(categories);
     }
 }
 

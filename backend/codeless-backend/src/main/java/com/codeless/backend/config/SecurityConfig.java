@@ -57,11 +57,16 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll() // Only GET is public
+                .requestMatchers("/api/cart/guest/**").permitAll() // Guest cart endpoints
                 .requestMatchers("/api/checkout/webhook/paypal").permitAll()
                 .requestMatchers("/health", "/actuator/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 
-                // Course management requires ADMIN role (future endpoints)
+                // Review endpoints - authenticated users only (not admin-only)
+                .requestMatchers("/api/courses/*/reviews/**").authenticated()
+                .requestMatchers("/api/courses/*/reviews").authenticated()
+                
+                // Course management requires ADMIN role
                 .requestMatchers(HttpMethod.POST, "/api/courses/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/courses/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/courses/**").hasRole("ADMIN")

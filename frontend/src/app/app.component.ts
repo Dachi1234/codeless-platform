@@ -32,4 +32,21 @@ export class AppComponent {
     this.authService.logout();
     this.router.navigate(['/home']);
   }
+
+  /**
+   * Navigate to home and scroll to top if already on home page
+   */
+  goToHome(): void {
+    const isOnHome = this.router.url === '/home' || this.router.url === '/';
+    
+    if (isOnHome) {
+      // Already on home page - just scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Navigate to home
+      this.router.navigate(['/home']).then(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  }
 }

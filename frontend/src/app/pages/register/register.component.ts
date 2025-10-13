@@ -72,7 +72,7 @@ import { AuthService } from '../../services/auth.service';
 
             <div class="form-group checkbox-group">
               <label class="checkbox-label">
-                <input type="checkbox" name="terms" [(ngModel)]="acceptedTerms" required>
+                <input type="checkbox" name="terms" [(ngModel)]="acceptedTerms" (ngModelChange)="clearTermsError()">
                 <span>I agree to the <a href="#" class="link-primary">Terms of Service</a> and <a href="#" class="link-primary">Privacy Policy</a></span>
               </label>
             </div>
@@ -86,7 +86,7 @@ import { AuthService } from '../../services/auth.service';
             <button 
               type="submit" 
               class="btn-primary btn-full"
-              [disabled]="!registerForm.form.valid || !acceptedTerms || isLoading">
+              [disabled]="!registerForm.form.valid || isLoading">
               {{ isLoading ? 'Creating Account...' : 'Sign Up' }}
             </button>
           </form>
@@ -150,7 +150,20 @@ export class RegisterComponent {
     private router: Router
   ) {}
 
+  clearTermsError(): void {
+    // Clear error message when user checks the terms checkbox
+    if (this.acceptedTerms && this.errorMessage.includes('Terms of Service')) {
+      this.errorMessage = '';
+    }
+  }
+
   onSubmit(): void {
+    // Validate Terms & Service checkbox
+    if (!this.acceptedTerms) {
+      this.errorMessage = 'You must agree to the Terms of Service and Privacy Policy to create an account.';
+      return;
+    }
+
     if (this.formData.password !== this.confirmPassword) {
       this.errorMessage = 'Passwords do not match';
       return;

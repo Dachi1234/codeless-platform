@@ -464,22 +464,19 @@ export class CourseDetailComponent {
   }
 
   addToCart(courseId: number): void {
-    // Check if user is logged in
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: `/courses/${courseId}` }
-      });
-      return;
-    }
-
+    // No auth check needed - CartService handles both guest and authenticated users
     this.isAddingToCart = true;
     this.enrollmentError = '';
+    this.enrollmentSuccess = '';
     
     this.cartService.addItem(courseId).subscribe({
       next: () => {
         this.isAddingToCart = false;
-        // Navigate to cart
-        this.router.navigate(['/cart']);
+        this.enrollmentSuccess = 'Added to cart!';
+        // Navigate to cart after a short delay to show success message
+        setTimeout(() => {
+          this.router.navigate(['/cart']);
+        }, 500);
       },
       error: (error) => {
         this.isAddingToCart = false;
@@ -495,21 +492,14 @@ export class CourseDetailComponent {
   }
 
   addToCartAndCheckout(courseId: number): void {
-    // Check if user is logged in
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: `/courses/${courseId}` }
-      });
-      return;
-    }
-
+    // No auth check needed - users will be prompted to login at checkout if not authenticated
     this.isAddingToCart = true;
     this.enrollmentError = '';
     
     this.cartService.addItem(courseId).subscribe({
       next: () => {
         this.isAddingToCart = false;
-        // Navigate directly to checkout
+        // Navigate directly to checkout (checkout page has auth guard)
         this.router.navigate(['/checkout']);
       },
       error: (error) => {

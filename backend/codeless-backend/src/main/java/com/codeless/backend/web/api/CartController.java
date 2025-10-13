@@ -48,5 +48,18 @@ public class CartController {
         cartService.clearCart(auth.getName());
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Merge guest cart items with user cart (after login)")
+    @PostMapping("/merge")
+    public ResponseEntity<CartDTO> mergeGuestCart(@RequestBody CartDTO.MergeCartRequest request, Authentication auth) {
+        Cart cart = cartService.mergeGuestCart(auth.getName(), request.courseIds());
+        return ResponseEntity.ok(CartDTO.from(cart));
+    }
+
+    @Operation(summary = "Get course details for guest cart (no auth required)")
+    @PostMapping("/guest/details")
+    public ResponseEntity<?> getGuestCartDetails(@RequestBody CartDTO.GuestCartRequest request) {
+        return ResponseEntity.ok(cartService.getGuestCartDetails(request.courseIds()));
+    }
 }
 

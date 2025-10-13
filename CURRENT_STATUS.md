@@ -408,6 +408,7 @@
 | File | Purpose | Status |
 |------|---------|--------|
 | `CURRENT_STATUS.md` | Overall status (this file) | ✅ Updated |
+| `docs/CURRENT_BUGS.md` | Active bug tracking | 🐛 **NEW** - Oct 13 |
 | `PLACEHOLDER_FUNCTIONALITY.md` | Placeholder/incomplete features | ✅ Updated |
 | `DEPLOYMENT_GUIDE.md` | Full deployment instructions | ✅ Complete |
 | `PROGRESS_TRACKING_EXPLAINED.md` | Progress system docs | ✅ Complete |

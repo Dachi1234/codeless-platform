@@ -44,5 +44,9 @@ public record CartDTO(
     }
     
     public record AddItemRequest(Long courseId) {}
+    
+    public record MergeCartRequest(List<Long> courseIds) {}
+    
+    public record GuestCartRequest(List<Long> courseIds) {}
 }
 

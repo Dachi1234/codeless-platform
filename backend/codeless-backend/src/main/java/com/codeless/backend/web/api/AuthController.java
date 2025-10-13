@@ -24,7 +24,7 @@ public class AuthController {
     }
 
     public record RegisterRequest(@Email String email, @NotBlank String password, String fullName) {}
-    public record LoginRequest(@Email String email, @NotBlank String password) {}
+    public record LoginRequest(@Email String email, @NotBlank String password, Boolean rememberMe) {}
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest body) {
@@ -34,7 +34,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest body) {
-        String jwt = authService.login(body.email(), body.password());
+        boolean rememberMe = body.rememberMe() != null && body.rememberMe();
+        String jwt = authService.login(body.email(), body.password(), rememberMe);
         return ResponseEntity.ok(Map.of("token", jwt));
     }
 }

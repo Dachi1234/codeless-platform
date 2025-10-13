@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 
@@ -11,6 +11,7 @@ export interface User {
 export interface LoginRequest {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterRequest {
@@ -28,6 +29,7 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly http = inject(HttpClient);
   private readonly TOKEN_KEY = 'auth_token';
   private readonly baseUrl = '/api/auth';
   
@@ -35,9 +37,22 @@ export class AuthService {
   currentUser = signal<User | null>(null);
   isAuthenticated = signal<boolean>(false);
   private bootstrapped = false;
+  
+  // Track whether user chose "Remember Me"
+  private useLocalStorage = false;
+  
+  // Callback for when auth state changes (used by CartService)
+  private authChangeCallbacks: Array<(authenticated: boolean) => void> = [];
 
-  constructor(private http: HttpClient) {
+  constructor() {
     // Don't auto-initialize; let APP_INITIALIZER handle it
+  }
+  
+  /**
+   * Register a callback to be called when authentication state changes
+   */
+  onAuthChange(callback: (authenticated: boolean) => void): void {
+    this.authChangeCallbacks.push(callback);
   }
 
   bootstrap(): Promise<void> {
@@ -81,14 +96,18 @@ export class AuthService {
       );
   }
 
-  login(request: LoginRequest): Observable<AuthResponse> {
-    console.log('🔐 LOGIN: Attempting login for:', request.email);
-    return this.http.post<AuthResponse>(`${this.baseUrl}/login`, request)
+  login(request: LoginRequest, rememberMe: boolean = false): Observable<AuthResponse> {
+    console.log('🔐 LOGIN: Attempting login for:', request.email, 'Remember me:', rememberMe);
+    
+    // Include rememberMe in the request
+    const loginPayload = { ...request, rememberMe };
+    
+    return this.http.post<AuthResponse>(`${this.baseUrl}/login`, loginPayload)
       .pipe(
         tap({
           next: (response) => {
             console.log('✅ LOGIN: Received response:', response);
-            this.handleAuthSuccess(response);
+            this.handleAuthSuccess(response, rememberMe);
             // Fetch full user info including roles
             console.log('📡 LOGIN: Fetching user details from /api/me...');
             this.me().subscribe({
@@ -124,17 +143,39 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    // Check localStorage first (rememberMe), then sessionStorage
+    return localStorage.getItem(this.TOKEN_KEY) || sessionStorage.getItem(this.TOKEN_KEY);
   }
 
-  private handleAuthSuccess(response: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, response.token);
+  private handleAuthSuccess(response: AuthResponse, rememberMe: boolean = false): void {
+    this.useLocalStorage = rememberMe;
+    
+    if (rememberMe) {
+      // Store in localStorage for persistent login (14 days)
+      localStorage.setItem(this.TOKEN_KEY, response.token);
+      sessionStorage.removeItem(this.TOKEN_KEY); // Clear from session if exists
+      console.log('💾 Token stored in localStorage (Remember Me: ON, 14 days)');
+    } else {
+      // Store in sessionStorage for temporary login (4 hours, cleared on browser close)
+      sessionStorage.setItem(this.TOKEN_KEY, response.token);
+      localStorage.removeItem(this.TOKEN_KEY); // Clear from local if exists
+      console.log('💾 Token stored in sessionStorage (Remember Me: OFF, 4 hours)');
+    }
+    
     this.currentUser.set({ email: response.email });
     this.isAuthenticated.set(true);
+    this.notifyAuthChange(true);
   }
 
   private clearToken(): void {
+    // Clear from both storage types
     localStorage.removeItem(this.TOKEN_KEY);
+    sessionStorage.removeItem(this.TOKEN_KEY);
+    this.notifyAuthChange(false);
+  }
+  
+  private notifyAuthChange(authenticated: boolean): void {
+    this.authChangeCallbacks.forEach(callback => callback(authenticated));
   }
 
   getUserRoles(): string[] {

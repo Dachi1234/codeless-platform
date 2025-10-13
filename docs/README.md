@@ -13,6 +13,7 @@ Welcome to the organized documentation for the Codeless E-Learning Platform!
 |------|---------|
 | [`README.md`](../README.md) | Project overview and quick start |
 | [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) | Current feature status and progress |
+| [`CURRENT_BUGS.md`](CURRENT_BUGS.md) 🐛 **NEW** | Active bug tracking and issues |
 | [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) 🆕 | Complete project organization guide |
 
 ---
@@ -114,6 +115,9 @@ Old and obsolete documentation is moved to [`archive/`](../archive/) for referen
 
 **...know what's working and what's not**
 → See [`CURRENT_STATUS.md`](../CURRENT_STATUS.md)
+
+**...see known bugs and issues**
+→ See [`CURRENT_BUGS.md`](CURRENT_BUGS.md)
 
 **...see what's planned next**
 → See [`docs/planning/PRIORITY_ROADMAP.md`](planning/PRIORITY_ROADMAP.md)

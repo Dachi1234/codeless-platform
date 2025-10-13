@@ -144,10 +144,10 @@ export class HomeComponent {
   private readonly service = inject(CourseService);
   
   featured$: Observable<Course[]> = this.service.list().pipe(
-    map(list => list.slice(0, 3))
+    map(response => response.content.slice(0, 3))
   );
 
   upcomingLive$: Observable<Course[]> = this.service.list().pipe(
-    map(list => list.filter(c => c.kind === 'LIVE').slice(0, 3))
+    map(response => response.content.filter(c => c.kind === 'LIVE').slice(0, 3))
   );
 }

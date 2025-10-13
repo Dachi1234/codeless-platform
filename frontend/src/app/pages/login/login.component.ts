@@ -46,7 +46,7 @@ import { AuthService } from '../../services/auth.service';
 
             <div class="form-footer">
               <label class="checkbox-label">
-                <input type="checkbox" name="remember">
+                <input type="checkbox" name="remember" [(ngModel)]="rememberMe">
                 <span>Remember me</span>
               </label>
               <a href="#" class="forgot-link">Forgot password?</a>
@@ -108,6 +108,7 @@ export class LoginComponent {
     password: ''
   };
   
+  rememberMe = false;
   isLoading = false;
   errorMessage = '';
 
@@ -117,11 +118,11 @@ export class LoginComponent {
   ) {}
 
   onSubmit(): void {
-    console.log('Login form submitted with:', this.credentials);
+    console.log('Login form submitted with:', this.credentials, 'Remember me:', this.rememberMe);
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.login(this.credentials).subscribe({
+    this.authService.login(this.credentials, this.rememberMe).subscribe({
       next: (response) => {
         console.log('Login successful:', response);
         this.isLoading = false;

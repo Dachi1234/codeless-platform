@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { CartService, CartItem } from '../../services/cart.service';
@@ -11,9 +11,15 @@ import { CartService, CartItem } from '../../services/cart.service';
   styleUrls: ['./cart.component.scss']
 })
 export class CartComponent implements OnInit {
-  items: CartItem[] = [];
-  loading = true;
-  subtotal = 0;
+  // Use computed values from cart service
+  items = computed(() => this.cartService.getCartItems());
+  subtotal = computed(() => 
+    this.items().reduce((sum, item) => sum + item.course.price, 0)
+  );
+
+  // Confirmation dialog state
+  showConfirmDialog = false;
+  itemToRemove: { courseId: number, courseName: string } | null = null;
 
   constructor(
     public cartService: CartService,
@@ -21,51 +27,46 @@ export class CartComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadCart();
+    // Cart is automatically reactive via signals
+    // No need to manually load
   }
 
-  loadCart(): void {
-    this.loading = true;
-    this.cartService.getCart().subscribe({
-      next: (cart) => {
-        this.items = cart.items;
-        this.calculateSubtotal();
-        this.loading = false;
-      },
-      error: () => {
-        this.loading = false;
-      }
-    });
+  confirmRemove(courseId: number, courseName: string): void {
+    this.itemToRemove = { courseId, courseName };
+    this.showConfirmDialog = true;
   }
 
-  removeItem(courseId: number): void {
-    this.cartService.removeItem(courseId).subscribe({
-      next: () => {
-        this.items = this.items.filter(item => item.course.id !== courseId);
-        this.calculateSubtotal();
-      }
-    });
+  cancelRemove(): void {
+    this.showConfirmDialog = false;
+    this.itemToRemove = null;
+  }
+
+  removeItem(): void {
+    if (this.itemToRemove) {
+      this.cartService.removeItem(this.itemToRemove.courseId).subscribe({
+        next: () => {
+          this.showConfirmDialog = false;
+          this.itemToRemove = null;
+          // Items will update automatically via signal
+        }
+      });
+    }
   }
 
   clearCart(): void {
-    if (confirm('Are you sure you want to clear your cart?')) {
+    if (confirm('Are you sure you want to clear your entire cart?')) {
       this.cartService.clearCart().subscribe({
         next: () => {
-          this.items = [];
-          this.subtotal = 0;
+          // Cart will update automatically via signal
         }
       });
     }
   }
 
   proceedToCheckout(): void {
-    if (this.items.length > 0) {
+    if (this.items().length > 0) {
       this.router.navigate(['/checkout']);
     }
-  }
-
-  private calculateSubtotal(): void {
-    this.subtotal = this.items.reduce((sum, item) => sum + item.course.price, 0);
   }
 }
 

@@ -43,7 +43,7 @@ export class CourseService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/courses';
 
-  list(params?: { q?: string; kind?: string; category?: string; level?: string; minPrice?: number; maxPrice?: number; sort?: string; page?: number; size?: number; }): Observable<Course[]> {
+  list(params?: { q?: string; kind?: string; category?: string; level?: string; minPrice?: number; maxPrice?: number; sort?: string; page?: number; size?: number; }): Observable<PageResponse<Course>> {
     let httpParams = new HttpParams();
     if (params) {
       for (const [k, v] of Object.entries(params)) {
@@ -52,12 +52,14 @@ export class CourseService {
         }
       }
     }
-    return this.http.get<PageResponse<Course>>(this.baseUrl, { params: httpParams }).pipe(
-      map(response => response.content)
-    );
+    return this.http.get<PageResponse<Course>>(this.baseUrl, { params: httpParams });
   }
 
   get(id: number): Observable<Course> {
     return this.http.get<Course>(`${this.baseUrl}/${id}`);
+  }
+
+  getCategories(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/categories`);
   }
 }
