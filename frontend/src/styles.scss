@@ -659,21 +659,43 @@ a:hover { text-decoration: underline; }
 
 /* Search & Filters */
 .courses-page__filters {
-  display: grid;
-  grid-template-columns: 2fr repeat(4, 1fr);
-  gap: var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-bottom: var(--space-6);
+  align-items: center;
 }
 
-@media (max-width: 1024px) {
+.courses-page__filters .search-input {
+  flex: 1 1 300px;
+  min-width: 250px;
+}
+
+.courses-page__filters .filter-with-clear,
+.courses-page__filters .sort-wrapper {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1200px) {
   .courses-page__filters {
-    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .courses-page__filters .search-input {
+    flex: 1 1 100%;
+    min-width: 100%;
   }
 }
 
 @media (max-width: 640px) {
   .courses-page__filters {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .courses-page__filters .filter-with-clear,
+  .courses-page__filters .sort-wrapper {
+    width: 100%;
   }
 }
 

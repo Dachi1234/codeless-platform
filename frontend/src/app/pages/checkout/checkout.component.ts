@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, computed } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -19,8 +19,8 @@ import { AuthService } from '../../services/auth.service';
           <div class="order-summary">
             <h2>Order Summary</h2>
             
-            <div class="cart-items" *ngIf="cartItems.length > 0">
-              <div class="cart-item" *ngFor="let item of cartItems">
+            <div class="cart-items" *ngIf="cartItems().length > 0">
+              <div class="cart-item" *ngFor="let item of cartItems()">
                 <img [src]="item.course.imageUrl || 'https://via.placeholder.com/80x60'" 
                      [alt]="item.course.title"
                      class="item-image">
@@ -32,12 +32,12 @@ import { AuthService } from '../../services/auth.service';
               </div>
             </div>
 
-            <div class="empty-cart" *ngIf="cartItems.length === 0">
+            <div class="empty-cart" *ngIf="cartItems().length === 0">
               <p>Your cart is empty.</p>
               <a routerLink="/courses" class="btn-browse">Browse Courses</a>
             </div>
 
-            <div class="summary-totals" *ngIf="cartItems.length > 0">
+            <div class="summary-totals" *ngIf="cartItems().length > 0">
               <div class="total-row">
                 <span>Subtotal:</span>
                 <span>\${{ getSubtotal() }}</span>
@@ -54,7 +54,7 @@ import { AuthService } from '../../services/auth.service';
           </div>
 
           <!-- Payment Section -->
-          <div class="payment-section" *ngIf="cartItems.length > 0">
+          <div class="payment-section" *ngIf="cartItems().length > 0">
             <h2>Payment Method</h2>
             
             <!-- Payment Method Selection -->
@@ -513,7 +513,12 @@ export class CheckoutComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  cartItems: CartItem[] = [];
+  // Use computed signals from CartService
+  cartItems = computed(() => this.cartService.getCartItems());
+  subtotal = computed(() => 
+    this.cartItems().reduce((sum, item) => sum + item.course.price, 0)
+  );
+  
   isProcessing = false;
   errorMessage = '';
   selectedPaymentMethod: 'card' | 'paypal' = 'card';
@@ -527,20 +532,12 @@ export class CheckoutComponent implements OnInit {
       return;
     }
 
-    // Load cart items
-    this.cartService.getCart().subscribe({
-      next: (cart) => {
-        this.cartItems = cart.items;
-      },
-      error: (err) => {
-        console.error('Error loading cart:', err);
-        this.errorMessage = 'Failed to load cart items';
-      }
-    });
+    // Cart items are automatically loaded via signals
+    // No need to manually fetch
   }
 
   getSubtotal(): number {
-    return this.cartItems.reduce((sum, item) => sum + item.course.price, 0);
+    return this.subtotal();
   }
 
   selectPaymentMethod(method: 'card' | 'paypal'): void {
@@ -557,7 +554,7 @@ export class CheckoutComponent implements OnInit {
 
     // Prepare checkout request
     const checkoutRequest = {
-      items: this.cartItems.map(item => ({
+      items: this.cartItems().map(item => ({
         courseId: item.course.id,
         quantity: 1
       })),
