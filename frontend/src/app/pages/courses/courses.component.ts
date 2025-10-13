@@ -213,12 +213,18 @@ import { FormsModule } from '@angular/forms';
     /* Adjust select padding and width to make room for clear button */
     .filter-with-clear .filter-select {
       padding-right: 60px; /* More space for clear button + dropdown arrow */
-      min-width: 180px; /* Consistent minimum width for all filters */
+      min-width: 200px; /* Increased minimum width for all filters */
+      max-width: 220px; /* Prevent too much expansion */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Ensure all filter wrappers have consistent width */
     .filter-with-clear {
-      min-width: 180px;
+      min-width: 200px; /* Increased to prevent overlapping */
+      max-width: 220px;
+      flex-shrink: 0; /* Prevent filters from shrinking */
     }
 
     /* Smooth focus states */
