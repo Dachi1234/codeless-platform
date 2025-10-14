@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 
 interface LiveSession {
@@ -30,7 +30,7 @@ interface SessionMaterial {
 @Component({
   selector: 'app-live-sessions-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './live-sessions-editor.component.html',
   styleUrls: ['./live-sessions-editor.component.scss']
 })

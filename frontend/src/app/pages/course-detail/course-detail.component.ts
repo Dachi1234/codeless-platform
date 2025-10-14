@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AsyncPipe, CurrencyPipe, DatePipe, NgIf, NgFor } from '@angular/common';
+import { AsyncPipe, CurrencyPipe, DatePipe, NgIf, NgFor, NgClass } from '@angular/common';
 import { Course, CourseService } from '../../services/course.service';
 import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable, BehaviorSubject, of } from 'rxjs';
@@ -45,7 +45,7 @@ interface LiveSession {
 @Component({
   selector: 'app-course-detail',
   standalone: true,
-  imports: [NgIf, NgFor, RouterLink, AsyncPipe, CurrencyPipe, DatePipe, CourseReviewsComponent],
+  imports: [NgIf, NgFor, NgClass, RouterLink, AsyncPipe, CurrencyPipe, DatePipe, CourseReviewsComponent],
   template: `
     <section class="course-detail">
       <div class="container">

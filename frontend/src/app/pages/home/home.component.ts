@@ -5,12 +5,11 @@ import { Course, CourseService } from '../../services/course.service';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { CourseCardComponent } from '../../components/course-card/course-card.component';
-import { UpcomingCardComponent } from '../../components/upcoming-card/upcoming-card.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, NgFor, AsyncPipe, CourseCardComponent, UpcomingCardComponent],
+  imports: [RouterLink, NgFor, AsyncPipe, CourseCardComponent],
   template: `
     <!-- Hero Section - Full Width -->
     <section class="hero">
