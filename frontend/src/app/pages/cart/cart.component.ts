@@ -16,6 +16,9 @@ export class CartComponent implements OnInit {
   subtotal = computed(() => 
     this.items().reduce((sum, item) => sum + item.course.price, 0)
   );
+  
+  // Validation notification
+  validationMessage = computed(() => this.cartService.getRemovedCoursesNotification());
 
   // Confirmation dialog state
   showConfirmDialog = false;

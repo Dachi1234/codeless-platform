@@ -42,6 +42,61 @@
   }
 }
 
+// Validation Notification
+.validation-notification {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 2px solid #F59E0B;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.3s ease;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+
+  .info-icon {
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  span {
+    flex: 1;
+    color: #92400E;
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .close-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: #92400E;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: all 0.2s;
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(146, 64, 14, 0.1);
+      transform: scale(1.1);
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 // Empty Cart
 .empty-cart {
   text-align: center;

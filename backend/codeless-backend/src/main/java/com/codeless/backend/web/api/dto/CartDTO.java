@@ -48,5 +48,9 @@ public record CartDTO(
     public record MergeCartRequest(List<Long> courseIds) {}
     
     public record GuestCartRequest(List<Long> courseIds) {}
+    
+    public record ValidationResponse(List<String> removedCourseTitles) {}
+    
+    public record GuestValidationResponse(List<Long> validCourseIds) {}
 }
 

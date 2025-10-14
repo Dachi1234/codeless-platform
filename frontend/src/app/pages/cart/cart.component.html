@@ -7,6 +7,16 @@
       <h1>Shopping Cart</h1>
     </div>
 
+    <!-- Validation Notification -->
+    <div class="validation-notification" *ngIf="validationMessage()">
+      <svg class="info-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#f59e0b" stroke-width="2" fill="#fef3c7"/>
+        <path d="M12 8v4M12 16h.01" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>{{ validationMessage() }}</span>
+      <button class="close-btn" (click)="cartService.clearRemovedCoursesNotification()">✕</button>
+    </div>
+
     <div class="cart-content">
       <!-- Empty Cart -->
       <div class="empty-cart" *ngIf="items().length === 0">

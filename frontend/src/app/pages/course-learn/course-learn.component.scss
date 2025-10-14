@@ -391,6 +391,17 @@
   padding: 1.5rem;
   background: #F9FAFB;
   border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+  
+  &.live-now {
+    background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 100%);
+    border-color: #EF4444;
+  }
+  
+  &.completed {
+    opacity: 0.85;
+  }
   margin-bottom: 1rem;
   border: 2px solid transparent;
   transition: all 0.2s;
@@ -413,6 +424,7 @@
   border-radius: 8px;
   padding: 0.75rem;
   min-width: 60px;
+  position: relative;
 }
 
 .date-day {
@@ -445,6 +457,30 @@
     align-items: center;
     gap: 0.5rem;
   }
+  
+  .session-description {
+    font-size: 0.9rem;
+    color: #6B7280;
+    margin-top: 0.75rem;
+    font-style: italic;
+    display: block;
+  }
+}
+
+.completed-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #4ECB71;
+  color: white;
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
 }
 
 .btn-join {
@@ -457,6 +493,8 @@
   cursor: pointer;
   transition: all 0.2s;
   align-self: center;
+  text-decoration: none;
+  display: inline-block;
 
   &:hover:not(:disabled) {
     background: #3db55e;
@@ -467,6 +505,41 @@
     background: #D1D5DB;
     cursor: not-allowed;
   }
+  
+  &.live {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    animation: pulse 2s ease-in-out infinite;
+    
+    &:hover {
+      background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+    }
+  }
+}
+
+.btn-watch-recording {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  
+  &:hover {
+    background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 
 .no-recordings {

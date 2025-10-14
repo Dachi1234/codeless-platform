@@ -57,31 +57,31 @@ public class AdminDashboardController {
 
         // Total revenue (sum of all PAID orders)
         BigDecimal totalRevenue = jdbcTemplate.queryForObject(
-                "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'PAID'",
+                "SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'PAID'",
                 BigDecimal.class
         );
-        stats.setTotalRevenue(totalRevenue);
+        stats.setTotalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO);
 
         // Total enrollments
         Long totalEnrollments = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM enrollments",
                 Long.class
         );
-        stats.setTotalEnrollments(totalEnrollments);
+        stats.setTotalEnrollments(totalEnrollments != null ? totalEnrollments : 0L);
 
         // Active courses (published)
         Long activeCourses = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM course WHERE published = true",
                 Long.class
         );
-        stats.setActiveCourses(activeCourses);
+        stats.setActiveCourses(activeCourses != null ? activeCourses : 0L);
 
         // Total users
         Long totalUsers = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM users",
                 Long.class
         );
-        stats.setTotalUsers(totalUsers);
+        stats.setTotalUsers(totalUsers != null ? totalUsers : 0L);
 
         // Placeholder percentage changes (you can implement real logic later)
         stats.setRevenueChange(12.5);
@@ -96,7 +96,7 @@ public class AdminDashboardController {
     public ResponseEntity<List<RecentOrder>> getRecentOrders() {
         String sql = """
                 SELECT o.id, u.full_name AS user_name, u.email AS user_email, 
-                       o.total_amount, o.status, o.created_at
+                       o.total, o.status, o.created_at
                 FROM orders o
                 JOIN users u ON o.user_id = u.id
                 ORDER BY o.created_at DESC
@@ -108,7 +108,7 @@ public class AdminDashboardController {
             order.setId(rs.getLong("id"));
             order.setUserName(rs.getString("user_name"));
             order.setUserEmail(rs.getString("user_email"));
-            order.setTotalAmount(rs.getBigDecimal("total_amount"));
+            order.setTotalAmount(rs.getBigDecimal("total"));
             order.setStatus(rs.getString("status"));
             order.setCreatedAt(rs.getString("created_at"));
             return order;

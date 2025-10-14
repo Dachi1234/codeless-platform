@@ -39,9 +39,11 @@ public class QuizController {
         private Integer passingScore;
         private Integer timeLimitMinutes;
         private Boolean randomizeQuestions;
+        private Boolean showFeedbackImmediately;
         private Integer maxAttempts;
         private Integer attemptCount;
         private Boolean canAttempt;
+        private BigDecimal bestScore; // Best score from previous attempts
         private List<QuestionTakeDTO> questions;
     }
 
@@ -50,6 +52,7 @@ public class QuizController {
         private Long id;
         private String questionType;
         private String questionText;
+        private String explanation; // For immediate feedback
         private Integer points;
         private List<AnswerOptionTakeDTO> answerOptions;
     }
@@ -58,7 +61,7 @@ public class QuizController {
     public static class AnswerOptionTakeDTO {
         private Long id;
         private String optionText;
-        // Note: isCorrect is NOT included for student view
+        private Boolean isCorrect; // Included only when showFeedbackImmediately is true
     }
 
     @Data
@@ -86,6 +89,7 @@ public class QuizController {
     public static class AttemptResultDTO {
         private Long attemptId;
         private BigDecimal score;
+        private BigDecimal bestScore; // Best score from all attempts
         private Boolean passed;
         private Integer timeSpentSeconds;
         private OffsetDateTime completedAt;
@@ -137,16 +141,27 @@ public class QuizController {
         dto.setPassingScore(quiz.getPassingScore());
         dto.setTimeLimitMinutes(quiz.getTimeLimitMinutes());
         dto.setRandomizeQuestions(quiz.getRandomizeQuestions());
+        dto.setShowFeedbackImmediately(quiz.getShowFeedbackImmediately());
         dto.setMaxAttempts(quiz.getMaxAttempts());
 
-        // Check attempt count
-        Long attemptCount = quizAttemptRepository.countByUserIdAndQuizId(user.getId(), quizId);
+        // Check attempt count and calculate best score
+        List<QuizAttempt> previousAttempts = quizAttemptRepository.findByUserIdAndQuizId(user.getId(), quizId);
+        Long attemptCount = (long) previousAttempts.size();
         dto.setAttemptCount(attemptCount.intValue());
+        
+        // Calculate best score from previous attempts
+        BigDecimal bestScore = previousAttempts.stream()
+            .map(QuizAttempt::getScore)
+            .filter(score -> score != null)
+            .max(BigDecimal::compareTo)
+            .orElse(null);
+        dto.setBestScore(bestScore);
         
         boolean canAttempt = quiz.getMaxAttempts() == null || attemptCount < quiz.getMaxAttempts();
         dto.setCanAttempt(canAttempt);
 
-        // Load questions (without correct answers)
+        // Load questions (include feedback data if showFeedbackImmediately is enabled)
+        boolean includeFeedback = quiz.getShowFeedbackImmediately() != null && quiz.getShowFeedbackImmediately();
         List<QuestionTakeDTO> questions = quiz.getQuestions().stream()
             .map(q -> {
                 QuestionTakeDTO qDto = new QuestionTakeDTO();
@@ -154,13 +169,24 @@ public class QuizController {
                 qDto.setQuestionType(q.getQuestionType().name());
                 qDto.setQuestionText(q.getQuestionText());
                 qDto.setPoints(q.getPoints());
+                
+                // Include explanation only if immediate feedback is enabled
+                if (includeFeedback) {
+                    qDto.setExplanation(q.getExplanation());
+                }
 
-                // Load answer options (without isCorrect flag)
+                // Load answer options (include isCorrect only if immediate feedback is enabled)
                 List<AnswerOptionTakeDTO> options = q.getAnswerOptions().stream()
                     .map(opt -> {
                         AnswerOptionTakeDTO optDto = new AnswerOptionTakeDTO();
                         optDto.setId(opt.getId());
                         optDto.setOptionText(opt.getOptionText());
+                        
+                        // Include isCorrect only if immediate feedback is enabled
+                        if (includeFeedback) {
+                            optDto.setIsCorrect(opt.getIsCorrect());
+                        }
+                        
                         return optDto;
                     })
                     .collect(Collectors.toList());
@@ -331,8 +357,16 @@ public class QuizController {
 
         quizAttemptRepository.save(attempt);
 
+        // Calculate best score from all attempts by this user on this quiz (including current one)
+        List<QuizAttempt> allAttempts = quizAttemptRepository.findByUserIdAndQuizId(user.getId(), quiz.getId());
+        BigDecimal bestScore = allAttempts.stream()
+            .map(QuizAttempt::getScore)
+            .filter(s -> s != null)
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+
         // Build result DTO
-        AttemptResultDTO result = buildAttemptResult(attempt, quiz, userAnswers);
+        AttemptResultDTO result = buildAttemptResult(attempt, quiz, userAnswers, bestScore);
 
         return ResponseEntity.ok(result);
     }
@@ -353,7 +387,15 @@ public class QuizController {
         Quiz quiz = quizRepository.findByIdWithQuestions(attempt.getQuiz().getId())
             .orElseThrow(() -> new IllegalArgumentException("Quiz not found"));
 
-        AttemptResultDTO result = buildAttemptResult(attempt, quiz, attempt.getUserAnswers());
+        // Calculate best score from all attempts by this user on this quiz
+        List<QuizAttempt> allAttempts = quizAttemptRepository.findByUserIdAndQuizId(user.getId(), quiz.getId());
+        BigDecimal bestScore = allAttempts.stream()
+            .map(QuizAttempt::getScore)
+            .filter(score -> score != null)
+            .max(BigDecimal::compareTo)
+            .orElse(BigDecimal.ZERO);
+
+        AttemptResultDTO result = buildAttemptResult(attempt, quiz, attempt.getUserAnswers(), bestScore);
 
         return ResponseEntity.ok(result);
     }
@@ -383,10 +425,11 @@ public class QuizController {
     }
 
     // Helper method to build attempt result
-    private AttemptResultDTO buildAttemptResult(QuizAttempt attempt, Quiz quiz, List<QuizUserAnswer> userAnswers) {
+    private AttemptResultDTO buildAttemptResult(QuizAttempt attempt, Quiz quiz, List<QuizUserAnswer> userAnswers, BigDecimal bestScore) {
         AttemptResultDTO result = new AttemptResultDTO();
         result.setAttemptId(attempt.getId());
         result.setScore(attempt.getScore());
+        result.setBestScore(bestScore);
         result.setPassed(attempt.getPassed());
         result.setTimeSpentSeconds(attempt.getTimeSpentSeconds());
         result.setCompletedAt(attempt.getCompletedAt());

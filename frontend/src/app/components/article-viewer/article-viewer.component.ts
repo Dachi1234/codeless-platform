@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, OnDestroy, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -21,6 +21,7 @@ export class ArticleViewerComponent implements OnInit, OnChanges, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
 
   @Input() lessonId!: number;
+  @Output() articleComplete = new EventEmitter<void>();
 
   loading = true;
   articleContent: SafeHtml = '';
@@ -91,6 +92,8 @@ export class ArticleViewerComponent implements OnInit, OnChanges, OnDestroy {
     }).subscribe({
       next: () => {
         console.log('Article marked as complete');
+        // Emit completion event for auto-advance
+        this.articleComplete.emit();
       },
       error: (err) => {
         console.error('Error marking article complete:', err);

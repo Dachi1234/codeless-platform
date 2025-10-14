@@ -61,5 +61,19 @@ public class CartController {
     public ResponseEntity<?> getGuestCartDetails(@RequestBody CartDTO.GuestCartRequest request) {
         return ResponseEntity.ok(cartService.getGuestCartDetails(request.courseIds()));
     }
+
+    @Operation(summary = "Validate cart and remove unpublished courses")
+    @PostMapping("/validate")
+    public ResponseEntity<CartDTO.ValidationResponse> validateCart(Authentication auth) {
+        java.util.List<String> removedTitles = cartService.validateAndCleanCart(auth.getName());
+        return ResponseEntity.ok(new CartDTO.ValidationResponse(removedTitles));
+    }
+
+    @Operation(summary = "Validate guest cart and filter unpublished courses (no auth required)")
+    @PostMapping("/guest/validate")
+    public ResponseEntity<CartDTO.GuestValidationResponse> validateGuestCart(@RequestBody CartDTO.GuestCartRequest request) {
+        java.util.List<Long> validCourseIds = cartService.validateGuestCart(request.courseIds());
+        return ResponseEntity.ok(new CartDTO.GuestValidationResponse(validCourseIds));
+    }
 }
 

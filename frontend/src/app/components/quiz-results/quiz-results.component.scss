@@ -96,6 +96,34 @@
       font-size: 14px;
       color: #6b7280;
     }
+
+    &.highlight {
+      background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+      border: 2px solid #F59E0B;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+
+      .stat-icon {
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .stat-value {
+        color: #92400E;
+      }
+
+      .stat-label {
+        color: #92400E;
+        font-weight: 600;
+      }
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
   }
 }
 

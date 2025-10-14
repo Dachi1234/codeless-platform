@@ -20,7 +20,7 @@ import { UpcomingCardComponent } from '../../components/upcoming-card/upcoming-c
       <div class="hero__content">
         <div class="brandbar">
           <span class="brandbar__line"></span>
-          <span class="brandbar__brace">{{ '{' }} {{ '}' }}</span>
+          <img src="/logo-icon.png" alt="Codeless" class="brandbar__icon">
           <span class="brandbar__line"></span>
         </div>
         

@@ -6,12 +6,14 @@ import { HttpClient } from '@angular/common/http';
 interface AnswerOption {
   id: number;
   optionText: string;
+  isCorrect?: boolean; // For immediate feedback
 }
 
 interface Question {
   id: number;
   questionType: string;
   questionText: string;
+  explanation?: string; // For immediate feedback
   points: number;
   answerOptions: AnswerOption[];
 }
@@ -23,9 +25,11 @@ interface Quiz {
   passingScore: number;
   timeLimitMinutes?: number;
   randomizeQuestions: boolean;
+  showFeedbackImmediately: boolean;
   maxAttempts?: number;
   attemptCount: number;
   canAttempt: boolean;
+  bestScore?: number; // Best score from previous attempts
   questions: Question[];
 }
 
@@ -61,6 +65,12 @@ export class QuizTakerComponent implements OnInit, OnDestroy {
 
   // User answers
   userAnswers: Map<number, UserAnswer> = new Map();
+  
+  // Immediate feedback state
+  questionFeedback: Map<number, {isCorrect: boolean, shown: boolean}> = new Map();
+  
+  // Track which questions have been submitted (locked)
+  submittedQuestions: Set<number> = new Set();
 
   // Current question
   currentQuestionIndex = 0;
@@ -260,6 +270,87 @@ export class QuizTakerComponent implements OnInit, OnDestroy {
 
   closeQuiz() {
     this.close.emit();
+  }
+
+  // Immediate Feedback Methods
+  
+  checkAndShowFeedback(questionId: number) {
+    const question = this.quiz?.questions.find(q => q.id === questionId);
+    if (!question) return;
+    
+    const userAnswer = this.userAnswers.get(questionId);
+    if (!userAnswer) return;
+    
+    let isCorrect = false;
+    
+    // Check answer based on question type
+    switch (question.questionType) {
+      case 'TRUE_FALSE':
+      case 'SINGLE_CHOICE':
+        // Single selection - check if selected option is correct
+        const selectedOption = question.answerOptions.find(opt => opt.id === userAnswer.selectedOptionId);
+        isCorrect = selectedOption?.isCorrect || false;
+        break;
+        
+      case 'MULTIPLE_CHOICE':
+        // Multiple selection - all correct options must be selected, no incorrect ones
+        const selectedIds = userAnswer.selectedOptionIds || [];
+        const correctIds = question.answerOptions.filter(opt => opt.isCorrect).map(opt => opt.id);
+        isCorrect = selectedIds.length === correctIds.length && 
+                    selectedIds.every(id => correctIds.includes(id));
+        break;
+        
+      case 'FILL_BLANK':
+        // For fill-in-the-blank, we can't check on frontend without correct answers
+        // This would need backend validation for accurate checking
+        // For now, just show feedback without correctness
+        isCorrect = false; // Placeholder
+        break;
+    }
+    
+    this.questionFeedback.set(questionId, {
+      isCorrect,
+      shown: true
+    });
+  }
+  
+  getQuestionFeedback(questionId: number): {isCorrect: boolean, shown: boolean} | undefined {
+    return this.questionFeedback.get(questionId);
+  }
+  
+  hasShownFeedback(questionId: number): boolean {
+    return this.questionFeedback.get(questionId)?.shown || false;
+  }
+  
+  // Manual answer checking for immediate feedback
+  checkCurrentAnswer() {
+    const currentQuestion = this.getCurrentQuestion();
+    if (currentQuestion && this.quiz?.showFeedbackImmediately) {
+      this.checkAndShowFeedback(currentQuestion.id);
+      // Mark question as submitted (locked)
+      this.submittedQuestions.add(currentQuestion.id);
+    }
+  }
+  
+  canCheckAnswer(questionId: number): boolean {
+    // Can only check if:
+    // 1. Immediate feedback is enabled
+    // 2. Question has been answered
+    // 3. Question hasn't been submitted yet
+    return !!(this.quiz?.showFeedbackImmediately && 
+             this.isQuestionAnswered(questionId) && 
+             !this.isQuestionSubmitted(questionId));
+  }
+  
+  isQuestionSubmitted(questionId: number): boolean {
+    return this.submittedQuestions.has(questionId);
+  }
+  
+  isQuestionEditable(questionId: number): boolean {
+    // Question is editable if:
+    // - Immediate feedback is NOT enabled, OR
+    // - Immediate feedback is enabled but question hasn't been submitted yet
+    return !this.quiz?.showFeedbackImmediately || !this.isQuestionSubmitted(questionId);
   }
 }
 

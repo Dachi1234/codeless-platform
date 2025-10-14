@@ -4,8 +4,9 @@
       <button class="hamburger" (click)="toggleMobileNav()" aria-label="Open menu" aria-controls="mobile-menu" [attr.aria-expanded]="showMobileNav">
         <span></span><span></span><span></span>
       </button>
-      <span class="header__logo-braces">{{ '{' }} {{ '}' }}</span>
-      <a routerLink="/home" class="header__logo-text" (click)="goToHome(); $event.preventDefault()">CODELESS</a>
+      <a routerLink="/home" class="header__logo-link" (click)="goToHome(); $event.preventDefault()">
+        <img src="/logo-full.png" alt="CODELESS" class="header__logo-img">
+      </a>
     </div>
     <nav class="header__nav">
       <a routerLink="/home" class="header__nav-link" (click)="goToHome(); $event.preventDefault()">
@@ -84,8 +85,7 @@
 <footer class="footer">
   <div class="container footer__row">
     <div class="footer__brand">
-      <span class="brandbar__brace">{{ '{' }} {{ '}' }}</span>
-      <span>CODELESS</span>
+      <img src="/logo-full.png" alt="CODELESS" class="footer__logo">
     </div>
     <div class="footer__links">
       <a routerLink="/home">Home</a>

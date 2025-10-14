@@ -277,6 +277,42 @@ public class AdminCoursesController {
     }
 
     /**
+     * Remove course image
+     */
+    @Operation(
+        summary = "Remove course image",
+        description = "Removes the course image and sets imageUrl to null"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Image removed successfully"),
+        @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    @DeleteMapping("/{id}/image")
+    @Transactional
+    public ResponseEntity<?> removeCourseImage(@PathVariable Long id) {
+        try {
+            // Find course
+            Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found with id: " + id));
+
+            // Remove image URL (don't delete from Cloudinary as it might be used elsewhere)
+            course.setImageUrl(null);
+            course.setUpdatedAt(OffsetDateTime.now());
+            courseRepository.save(course);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Image removed successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", "Failed to remove image: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
      * DTO for image upload response
      */
     @Data

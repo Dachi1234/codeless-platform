@@ -190,6 +190,38 @@
   }
 }
 
+.image-placeholder {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  border: 2px dashed #D1D5DB;
+  background: #F9FAFB;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  color: #6B7280;
+
+  svg {
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    color: #4B5563;
+  }
+
+  small {
+    font-size: 14px;
+    color: #9CA3AF;
+  }
+}
+
 .upload-controls {
   display: flex;
   gap: 12px;

@@ -74,7 +74,8 @@
           <!-- Article Lesson -->
           <ng-container *ngIf="currentLesson.lessonType === 'ARTICLE'">
             <app-article-viewer
-              [lessonId]="currentLesson.id">
+              [lessonId]="currentLesson.id"
+              (articleComplete)="onArticleComplete()">
             </app-article-viewer>
           </ng-container>
 
@@ -153,47 +154,92 @@
 
         <div class="upcoming-sessions">
           <h3>Upcoming Sessions</h3>
-          <div class="session-card">
+          
+          <!-- Dynamic sessions from database -->
+          <div *ngFor="let session of getUpcomingSessions()" class="session-card" 
+               [class.live-now]="session.status === 'LIVE'">
             <div class="session-date">
-              <div class="date-day">15</div>
-              <div class="date-month">Feb</div>
+              <div class="date-day">{{ session.scheduledAt | date:'d' }}</div>
+              <div class="date-month">{{ session.scheduledAt | date:'MMM' }}</div>
             </div>
             <div class="session-info">
-              <h4>Session 1: Introduction & Overview</h4>
+              <h4>Session {{ session.sessionNumber }}: {{ session.title }}</h4>
               <p class="session-time">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
                   <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                 </svg>
-                {{ course.startDate | date:'EEEE, MMM d, y' }} at 7:00 PM EST
+                {{ session.scheduledAt | date:'EEEE, MMM d, y \'at\' h:mm a' }}
               </p>
-              <p class="session-duration">Duration: 2 hours</p>
+              <p class="session-duration">Duration: {{ session.durationMinutes }} minutes</p>
+              <p class="session-description" *ngIf="session.description">{{ session.description }}</p>
             </div>
-            <button class="btn-join" disabled>Join Session (Available 15 min before)</button>
+            
+            <!-- Join button with Zoom link -->
+            <a *ngIf="session.zoomLink && session.status === 'LIVE'" 
+               [href]="session.zoomLink" 
+               target="_blank" 
+               class="btn-join live">
+              🔴 Join Live Session Now
+            </a>
+            <a *ngIf="session.zoomLink && session.status === 'SCHEDULED'" 
+               [href]="session.zoomLink" 
+               target="_blank" 
+               class="btn-join">
+              Join Session
+            </a>
+            <button *ngIf="!session.zoomLink" class="btn-join" disabled>
+              Link will be available soon
+            </button>
           </div>
-
-          <div class="session-card upcoming">
-            <div class="session-date">
-              <div class="date-day">22</div>
-              <div class="date-month">Feb</div>
-            </div>
-            <div class="session-info">
-              <h4>Session 2: Deep Dive</h4>
-              <p class="session-time">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                Wednesday, Feb 22, 2025 at 7:00 PM EST
-              </p>
-              <p class="session-duration">Duration: 2 hours</p>
-            </div>
-          </div>
+          
+          <!-- No sessions message -->
+          <p *ngIf="getUpcomingSessions().length === 0" class="no-recordings">
+            No upcoming sessions scheduled.
+          </p>
         </div>
 
         <div class="past-sessions">
           <h3>Past Sessions & Recordings</h3>
-          <p class="no-recordings">No recordings available yet.</p>
+          
+          <!-- Dynamic past sessions from database -->
+          <div *ngFor="let session of getPastSessions()" class="session-card completed">
+            <div class="session-date">
+              <div class="date-day">{{ session.scheduledAt | date:'d' }}</div>
+              <div class="date-month">{{ session.scheduledAt | date:'MMM' }}</div>
+              <span class="completed-badge">✓</span>
+            </div>
+            <div class="session-info">
+              <h4>Session {{ session.sessionNumber }}: {{ session.title }}</h4>
+              <p class="session-time">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                  <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                {{ session.scheduledAt | date:'EEEE, MMM d, y \'at\' h:mm a' }}
+              </p>
+              <p class="session-duration">Duration: {{ session.durationMinutes }} minutes</p>
+            </div>
+            
+            <!-- Recording link if available -->
+            <a *ngIf="session.recordingUrl" 
+               [href]="session.recordingUrl" 
+               target="_blank" 
+               class="btn-watch-recording">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 3l14 9-14 9V3z" fill="currentColor"/>
+              </svg>
+              Watch Recording
+            </a>
+            <button *ngIf="!session.recordingUrl" class="btn-join" disabled>
+              Recording not available
+            </button>
+          </div>
+          
+          <!-- No past sessions message -->
+          <p *ngIf="getPastSessions().length === 0" class="no-recordings">
+            No recordings available yet.
+          </p>
         </div>
       </div>
 

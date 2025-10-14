@@ -32,6 +32,18 @@ interface CurriculumSection {
   lessons: CurriculumLesson[];
 }
 
+interface LiveSession {
+  id: number;
+  sessionNumber: number;
+  title: string;
+  description?: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  zoomLink?: string;
+  status: 'SCHEDULED' | 'LIVE' | 'COMPLETED' | 'CANCELLED';
+  recordingUrl?: string;
+}
+
 @Component({
   selector: 'app-course-learn',
   standalone: true,
@@ -53,6 +65,7 @@ export class CourseLearnComponent implements OnInit {
   currentLessonId: number | null = null;
   selectedSection = 0;
   curriculum: CurriculumSection[] = [];
+  liveSessions: LiveSession[] = [];
   
   // Quiz state
   showingQuiz = false;
@@ -86,6 +99,10 @@ export class CourseLearnComponent implements OnInit {
             this.course = course;
             // Load curriculum
             this.loadCurriculum(courseId);
+            // Load live sessions if this is a LIVE course
+            if (course.kind === 'LIVE') {
+              this.loadLiveSessions(courseId);
+            }
           },
           error: () => {
             this.loading = false;
@@ -113,6 +130,28 @@ export class CourseLearnComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  loadLiveSessions(courseId: number): void {
+    console.log(`%c[Learn Page] Loading live sessions for course ${courseId}`, 'color: purple; font-weight: bold');
+    this.http.get<LiveSession[]>(`/api/courses/${courseId}/sessions`).subscribe({
+      next: (sessions) => {
+        console.log(`%c[Learn Page] ✓ Loaded ${sessions.length} sessions`, 'color: green; font-weight: bold');
+        this.liveSessions = sessions;
+      },
+      error: (err) => {
+        console.error('%c[Learn Page] ✗ Error loading sessions:', 'color: red; font-weight: bold', err);
+        this.liveSessions = [];
+      }
+    });
+  }
+
+  getUpcomingSessions(): LiveSession[] {
+    return this.liveSessions.filter(s => s.status === 'SCHEDULED' || s.status === 'LIVE');
+  }
+
+  getPastSessions(): LiveSession[] {
+    return this.liveSessions.filter(s => s.status === 'COMPLETED');
   }
 
   selectLesson(sectionIndex: number, lessonId: number): void {
@@ -154,6 +193,11 @@ export class CourseLearnComponent implements OnInit {
     
     // Mark lesson as complete
     this.markCurrentLessonComplete();
+    
+    // Auto-advance to next lesson after showing results
+    setTimeout(() => {
+      this.nextLesson();
+    }, 3000); // 3 seconds delay to allow user to see quiz results
   }
   
   onQuizResultsClose(): void {
@@ -183,6 +227,13 @@ export class CourseLearnComponent implements OnInit {
       next: () => {
         // Update local state
         lesson.completed = newCompletedState;
+        
+        // Auto-advance to next lesson if just completed
+        if (newCompletedState) {
+          setTimeout(() => {
+            this.nextLesson();
+          }, 1000); // 1 second delay for smooth transition
+        }
       },
       error: (err) => {
         console.error('Error marking lesson complete:', err);
@@ -302,6 +353,18 @@ export class CourseLearnComponent implements OnInit {
     setTimeout(() => {
       this.nextLesson();
     }, 2000);
+  }
+
+  onArticleComplete(): void {
+    const currentLesson = this.getCurrentLesson();
+    if (currentLesson) {
+      currentLesson.completed = true;
+    }
+    
+    // Auto-advance to next lesson
+    setTimeout(() => {
+      this.nextLesson();
+    }, 2000); // 2 seconds delay for smooth transition
   }
 }
 

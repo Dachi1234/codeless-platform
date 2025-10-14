@@ -2,6 +2,7 @@ package com.codeless.backend.web.api;
 
 import com.codeless.backend.domain.Course;
 import com.codeless.backend.repository.CourseRepository;
+import com.codeless.backend.repository.EnrollmentRepository;
 import com.codeless.backend.web.api.dto.CourseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,16 +13,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/courses")
 public class CoursesController {
 
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
-    public CoursesController(CourseRepository courseRepository) {
+    public CoursesController(CourseRepository courseRepository, EnrollmentRepository enrollmentRepository) {
         this.courseRepository = courseRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     @io.swagger.v3.oas.annotations.Operation(
@@ -112,7 +118,15 @@ public class CoursesController {
         if (maxPrice != null) {
             spec = spec.and((root, cq, cb) -> cb.lessThanOrEqualTo(root.get("price"), maxPrice));
         }
-        Page<CourseDTO> result = courseRepository.findAll(spec, pageable).map(CourseDTO::from);
+        
+        // Fetch courses
+        Page<Course> coursePage = courseRepository.findAll(spec, pageable);
+        
+        // Enrich courses with actual enrollment counts
+        enrichCoursesWithEnrollmentCounts(coursePage.getContent());
+        
+        // Convert to DTOs
+        Page<CourseDTO> result = coursePage.map(CourseDTO::from);
         return ResponseEntity.ok(result);
     }
 
@@ -121,6 +135,12 @@ public class CoursesController {
     public ResponseEntity<CourseDTO> details(@PathVariable("id") Long id) {
         return courseRepository.findById(id)
                 .filter(course -> course.getPublished() != null && course.getPublished()) // Only show published courses
+                .map(course -> {
+                    // Enrich with enrollment count
+                    long enrollmentCount = enrollmentRepository.countByCourseId(course.getId());
+                    course.setEnrolledCount((int) enrollmentCount);
+                    return course;
+                })
                 .map(CourseDTO::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -134,6 +154,37 @@ public class CoursesController {
     public ResponseEntity<List<String>> getCategories() {
         List<String> categories = courseRepository.findDistinctCategories();
         return ResponseEntity.ok(categories);
+    }
+
+    /**
+     * Enrich a list of courses with their actual enrollment counts
+     */
+    private void enrichCoursesWithEnrollmentCounts(List<Course> courses) {
+        if (courses.isEmpty()) {
+            return;
+        }
+
+        // Extract course IDs
+        List<Long> courseIds = courses.stream()
+                .map(Course::getId)
+                .collect(Collectors.toList());
+
+        // Get enrollment counts in a single query
+        List<Object[]> countResults = enrollmentRepository.countEnrollmentsByCourseIds(courseIds);
+
+        // Build a map of courseId -> enrollmentCount
+        Map<Long, Long> enrollmentCounts = new HashMap<>();
+        for (Object[] result : countResults) {
+            Long courseId = (Long) result[0];
+            Long count = (Long) result[1];
+            enrollmentCounts.put(courseId, count);
+        }
+
+        // Update each course with its enrollment count
+        for (Course course : courses) {
+            Long count = enrollmentCounts.getOrDefault(course.getId(), 0L);
+            course.setEnrolledCount(count.intValue());
+        }
     }
 }
 

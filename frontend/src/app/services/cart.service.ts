@@ -30,6 +30,14 @@ export interface GuestCartItem {
   addedAt: string;
 }
 
+export interface ValidationResponse {
+  removedCourseTitles: string[];
+}
+
+export interface GuestValidationResponse {
+  validCourseIds: number[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -43,6 +51,9 @@ export class CartService {
   cartCount = computed(() => this.cartItems().length);
   private isAuthenticated = signal<boolean>(false);
   private authService: any; // Will be injected in initWithAuthService
+  
+  // Validation notification state
+  private removedCoursesNotification = signal<string | null>(null);
   
   constructor() {
     // Load guest cart initially (auth service will update later)
@@ -92,9 +103,13 @@ export class CartService {
    */
   loadCart(): void {
     if (this.isAuthenticated()) {
-      // Load from backend
+      // Load from backend and validate
       this.getCart().subscribe({
-        next: (cart) => this.cartItems.set(cart.items),
+        next: (cart) => {
+          this.cartItems.set(cart.items);
+          // Validate cart and remove unpublished courses
+          this.validateCart().subscribe();
+        },
         error: () => this.cartItems.set([])
       });
     } else {
@@ -116,27 +131,36 @@ export class CartService {
       return;
     }
 
-    // Fetch course details for each item
-    const courseIds = guestCart.map(item => item.courseId);
-    this.http.post<CartItem[]>('/api/cart/guest/details', { courseIds }).subscribe({
-      next: (items) => this.cartItems.set(items),
-      error: () => {
-        // If API fails, just show count but no details
-        // Create placeholder items with IDs only
-        const placeholders: CartItem[] = guestCart.map(item => ({
-          id: item.courseId,
-          course: {
-            id: item.courseId,
-            title: 'Loading...',
-            slug: '',
-            price: 0,
-            imageUrl: null,
-            kind: 'PRE_RECORDED'
-          },
-          addedAt: item.addedAt
-        }));
-        this.cartItems.set(placeholders);
+    // Validate guest cart first, then load items
+    this.validateGuestCart().subscribe(() => {
+      const validatedCart = this.getGuestCart();
+      if (validatedCart.length === 0) {
+        this.cartItems.set([]);
+        return;
       }
+
+      // Fetch course details for each valid item
+      const courseIds = validatedCart.map(item => item.courseId);
+      this.http.post<CartItem[]>('/api/cart/guest/details', { courseIds }).subscribe({
+        next: (items) => this.cartItems.set(items),
+        error: () => {
+          // If API fails, just show count but no details
+          // Create placeholder items with IDs only
+          const placeholders: CartItem[] = validatedCart.map(item => ({
+            id: item.courseId,
+            course: {
+              id: item.courseId,
+              title: 'Loading...',
+              slug: '',
+              price: 0,
+              imageUrl: null,
+              kind: 'PRE_RECORDED'
+            },
+            addedAt: item.addedAt
+          }));
+          this.cartItems.set(placeholders);
+        }
+      });
     });
   }
 
@@ -259,6 +283,91 @@ export class CartService {
 
   private clearGuestCart(): void {
     localStorage.removeItem(this.GUEST_CART_KEY);
+  }
+
+  // ===== Cart Validation Methods =====
+
+  /**
+   * Validate cart and remove unpublished courses (for authenticated users)
+   */
+  validateCart(): Observable<void> {
+    return this.http.post<ValidationResponse>(`${this.baseUrl}/validate`, {}).pipe(
+      tap(response => {
+        if (response.removedCourseTitles && response.removedCourseTitles.length > 0) {
+          // Set notification message
+          const count = response.removedCourseTitles.length;
+          const message = count === 1
+            ? `"${response.removedCourseTitles[0]}" is no longer available and was removed from your cart.`
+            : `${count} courses are no longer available and were removed from your cart.`;
+          
+          this.removedCoursesNotification.set(message);
+          
+          // Reload cart to reflect changes
+          this.loadCart();
+          
+          // Auto-clear notification after 8 seconds
+          setTimeout(() => this.removedCoursesNotification.set(null), 8000);
+        }
+      }),
+      switchMap(() => of(void 0)),
+      catchError(() => of(void 0))
+    );
+  }
+
+  /**
+   * Validate guest cart and remove unpublished course IDs (for non-authenticated users)
+   */
+  validateGuestCart(): Observable<void> {
+    const guestCart = this.getGuestCart();
+    if (guestCart.length === 0) {
+      return of(void 0);
+    }
+
+    const courseIds = guestCart.map(item => item.courseId);
+    
+    return this.http.post<GuestValidationResponse>('/api/cart/guest/validate', { courseIds }).pipe(
+      tap(response => {
+        const validIds = new Set(response.validCourseIds);
+        const originalCount = courseIds.length;
+        const validCount = validIds.size;
+        
+        if (validCount < originalCount) {
+          // Filter guest cart to only valid courses
+          const validCart = guestCart.filter(item => validIds.has(item.courseId));
+          this.saveGuestCart(validCart);
+          
+          // Set notification
+          const removedCount = originalCount - validCount;
+          const message = removedCount === 1
+            ? '1 course is no longer available and was removed from your cart.'
+            : `${removedCount} courses are no longer available and were removed from your cart.`;
+          
+          this.removedCoursesNotification.set(message);
+          
+          // Reload cart items
+          this.loadGuestCartItems();
+          
+          // Auto-clear notification after 8 seconds
+          setTimeout(() => this.removedCoursesNotification.set(null), 8000);
+        }
+      }),
+      switchMap(() => of(void 0)),
+      catchError(() => of(void 0))
+    );
+  }
+
+  /**
+   * Get the removed courses notification message
+   */
+  getRemovedCoursesNotification() {
+    return this.removedCoursesNotification();
+  }
+
+  /**
+   * Clear the removed courses notification
+   */
+  clearRemovedCoursesNotification(): void {
+    this.removedCoursesNotification.set(null);
   }
 }
 

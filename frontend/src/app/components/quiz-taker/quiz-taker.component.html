@@ -39,6 +39,13 @@
               <span class="info-value">{{ quiz.attemptCount }} / {{ quiz.maxAttempts }}</span>
             </div>
           }
+
+          @if (quiz.bestScore !== null && quiz.bestScore !== undefined) {
+            <div class="info-item best-score-highlight">
+              <span class="info-label">🏆 Your Best Score:</span>
+              <span class="info-value best-score">{{ quiz.bestScore | number:'1.0-1' }}%</span>
+            </div>
+          }
         </div>
 
         @if (!quiz.canAttempt) {
@@ -115,11 +122,12 @@
                 <div class="answer-options">
                   <small class="hint-text">Select all that apply</small>
                   @for (option of question.answerOptions; track option.id) {
-                    <label class="answer-option">
+                    <label class="answer-option" [class.disabled]="!isQuestionEditable(question.id)">
                       <input 
                         type="checkbox" 
                         [value]="option.id"
                         [checked]="isOptionSelected(question.id, option.id)"
+                        [disabled]="!isQuestionEditable(question.id)"
                         (change)="toggleMultipleChoice(question.id, option.id)"
                       />
                       <span class="option-content">{{ option.optionText }}</span>
@@ -130,12 +138,13 @@
                 <!-- True/False - Radio Buttons -->
                 <div class="answer-options">
                   @for (option of question.answerOptions; track option.id) {
-                    <label class="answer-option">
+                    <label class="answer-option" [class.disabled]="!isQuestionEditable(question.id)">
                       <input 
                         type="radio" 
                         [name]="'question-' + question.id"
                         [value]="option.id"
                         [checked]="getSelectedOptionId(question.id) === option.id"
+                        [disabled]="!isQuestionEditable(question.id)"
                         (change)="selectAnswer(question.id, option.id)"
                       />
                       <span class="option-content">{{ option.optionText }}</span>
@@ -149,6 +158,7 @@
                     <input 
                       type="text"
                       [value]="getTextAnswer(question.id)"
+                      [disabled]="!isQuestionEditable(question.id)"
                       (input)="setTextAnswer(question.id, $any($event.target).value)"
                       placeholder="Type your answer..."
                       class="answer-input"
@@ -156,6 +166,7 @@
                   } @else {
                     <textarea 
                       [value]="getTextAnswer(question.id)"
+                      [disabled]="!isQuestionEditable(question.id)"
                       (input)="setTextAnswer(question.id, $any($event.target).value)"
                       placeholder="Type your answer..."
                       rows="4"
@@ -165,6 +176,43 @@
                 </div>
               }
             </div>
+
+            <!-- Submit Answer Button (for immediate feedback) -->
+            @if (quiz.showFeedbackImmediately && canCheckAnswer(question.id)) {
+              <button 
+                class="btn-submit-answer"
+                (click)="checkCurrentAnswer()">
+                Submit Answer
+              </button>
+            }
+
+            <!-- Immediate Feedback (if enabled) -->
+            @if (quiz.showFeedbackImmediately && hasShownFeedback(question.id)) {
+              <div class="immediate-feedback" 
+                   [class.correct]="getQuestionFeedback(question.id)?.isCorrect" 
+                   [class.incorrect]="!getQuestionFeedback(question.id)?.isCorrect">
+                <div class="feedback-header">
+                  @if (getQuestionFeedback(question.id)?.isCorrect) {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10" fill="#4ECB71"/>
+                      <path d="M8 12l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="feedback-title">Correct!</span>
+                  } @else {
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="12" r="10" fill="#FF6B6B"/>
+                      <path d="M15 9l-6 6M9 9l6 6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span class="feedback-title">Not quite right</span>
+                  }
+                </div>
+                @if (question.explanation) {
+                  <div class="feedback-explanation">
+                    <strong>Explanation:</strong> {{ question.explanation }}
+                  </div>
+                }
+              </div>
+            }
           </div>
         }
 

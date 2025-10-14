@@ -29,6 +29,19 @@ interface CurriculumResponse {
   sections: CurriculumSection[];
 }
 
+// Live Session types
+interface LiveSession {
+  id: number;
+  sessionNumber: number;
+  title: string;
+  description?: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  zoomLink?: string;
+  status: 'SCHEDULED' | 'LIVE' | 'COMPLETED' | 'CANCELLED';
+  recordingUrl?: string;
+}
+
 @Component({
   selector: 'app-course-detail',
   standalone: true,
@@ -106,7 +119,7 @@ interface CurriculumResponse {
                 <button class="tab" [class.tab--active]="activeTab === 'overview'" (click)="setActiveTab('overview')">Overview</button>
                 <button class="tab" [class.tab--active]="activeTab === 'syllabus'" (click)="setActiveTab('syllabus')">Syllabus</button>
                 <button class="tab" [class.tab--active]="activeTab === 'reviews'" (click)="setActiveTab('reviews')">Reviews</button>
-                <button class="tab" [class.tab--active]="activeTab === 'schedule'" (click)="setActiveTab('schedule')">Schedule</button>
+                <button class="tab" [class.tab--active]="activeTab === 'schedule'" (click)="setActiveTab('schedule')" *ngIf="c.kind === 'LIVE'">Schedule</button>
               </div>
 
               <!-- Tab Content -->
@@ -165,10 +178,83 @@ interface CurriculumResponse {
                   </app-course-reviews>
                 </div>
 
-                <!-- Schedule Tab -->
-                <div class="course-detail__content-section" *ngIf="activeTab === 'schedule'">
-                  <h2 class="section-title">Course Schedule</h2>
-                  <p>Live session schedule, office hours, and important dates will be listed here for enrolled students.</p>
+                <!-- Schedule Tab (Only for LIVE courses) -->
+                <div class="course-detail__content-section" *ngIf="activeTab === 'schedule' && c.kind === 'LIVE'">
+                  <h2 class="section-title">Live Session Schedule</h2>
+                  
+                  <ng-container *ngIf="liveSessions$ | async as sessions">
+                    <div class="sessions-list" *ngIf="sessions && sessions.length > 0">
+                      <div class="session-card" *ngFor="let session of sessions" 
+                           [class.session-live]="session.status === 'LIVE'"
+                           [class.session-completed]="session.status === 'COMPLETED'"
+                           [class.session-cancelled]="session.status === 'CANCELLED'">
+                        <div class="session-header">
+                          <div class="session-number-badge">
+                            Session {{ session.sessionNumber }}
+                          </div>
+                          <div class="session-status-badge" [ngClass]="'status-' + session.status.toLowerCase()">
+                            {{ session.status === 'SCHEDULED' ? '📅 Upcoming' : 
+                               session.status === 'LIVE' ? '🔴 Live Now' : 
+                               session.status === 'COMPLETED' ? '✓ Completed' : 
+                               '✗ Cancelled' }}
+                          </div>
+                        </div>
+                        
+                        <h3 class="session-title">{{ session.title }}</h3>
+                        <p class="session-description" *ngIf="session.description">{{ session.description }}</p>
+                        
+                        <div class="session-details">
+                          <div class="session-detail-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                              <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>{{ session.scheduledAt | date:'EEEE, MMMM d, y' }}</span>
+                          </div>
+                          <div class="session-detail-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                              <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <span>{{ session.scheduledAt | date:'h:mm a' }} ({{ session.durationMinutes }} minutes)</span>
+                          </div>
+                        </div>
+                        
+                        <!-- Zoom Link (only for enrolled users and SCHEDULED/LIVE sessions) -->
+                        <div class="session-actions" *ngIf="isEnrolled && session.zoomLink && (session.status === 'SCHEDULED' || session.status === 'LIVE')">
+                          <a [href]="session.zoomLink" target="_blank" class="btn-join-session" [class.btn-live]="session.status === 'LIVE'">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M15.5 7.5L19 5v14l-3.5-2.5M5 17a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v10z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            {{ session.status === 'LIVE' ? 'Join Live Session' : 'Join Session' }}
+                          </a>
+                        </div>
+                        
+                        <!-- Recording Link (only for completed sessions with recording) -->
+                        <div class="session-actions" *ngIf="isEnrolled && session.recordingUrl && session.status === 'COMPLETED'">
+                          <a [href]="session.recordingUrl" target="_blank" class="btn-watch-recording">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 3l14 9-14 9V3z" fill="currentColor"/>
+                            </svg>
+                            Watch Recording
+                          </a>
+                        </div>
+                        
+                        <!-- Enrollment Required Message -->
+                        <div class="enrollment-required" *ngIf="!isEnrolled && (session.status === 'SCHEDULED' || session.status === 'LIVE')">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 12l2 2 4-4" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          <span>Enroll in this course to access live sessions</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p *ngIf="!sessions || sessions.length === 0" class="empty-message">
+                      No live sessions scheduled yet. Check back soon!
+                    </p>
+                  </ng-container>
                 </div>
               </div>
             </div>
@@ -365,6 +451,195 @@ interface CurriculumResponse {
       border-radius: 12px;
       margin-top: 20px;
     }
+
+    // Live Sessions
+    .sessions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .session-card {
+      background: white;
+      border: 2px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.2s;
+
+      &.session-live {
+        border-color: #EF4444;
+        background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 100%);
+      }
+
+      &.session-completed {
+        opacity: 0.8;
+      }
+
+      &.session-cancelled {
+        opacity: 0.6;
+        background: #F9FAFB;
+      }
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .session-number-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #E0E7FF;
+      color: #3730A3;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .session-status-badge {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+
+      &.status-scheduled {
+        background: #DBEAFE;
+        color: #1E40AF;
+      }
+
+      &.status-live {
+        background: #FEE2E2;
+        color: #991B1B;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      &.status-completed {
+        background: #D1FAE5;
+        color: #065F46;
+      }
+
+      &.status-cancelled {
+        background: #F3F4F6;
+        color: #6B7280;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .session-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 8px 0;
+    }
+
+    .session-description {
+      color: #6B7280;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .session-details {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .session-detail-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #374151;
+      font-size: 15px;
+
+      svg {
+        color: #6366F1;
+        flex-shrink: 0;
+      }
+    }
+
+    .session-actions {
+      margin-top: 16px;
+    }
+
+    .btn-join-session {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      }
+
+      &.btn-live {
+        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        animation: pulse 2s ease-in-out infinite;
+
+        &:hover {
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+      }
+    }
+
+    .btn-watch-recording {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      transition: all 0.2s;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+    }
+
+    .enrollment-required {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #FEF3C7;
+      border: 1px solid #F59E0B;
+      border-radius: 8px;
+      margin-top: 16px;
+
+      svg {
+        flex-shrink: 0;
+      }
+
+      span {
+        color: #92400E;
+        font-size: 14px;
+        font-weight: 500;
+      }
+    }
   `
 })
 export class CourseDetailComponent {
@@ -380,12 +655,26 @@ export class CourseDetailComponent {
     map(params => Number(params.get('id'))),
     switchMap(id => this.service.get(id)),
     tap(course => {
+      console.log('Course loaded:', course);
+      console.log('Course kind:', course.kind);
+      console.log('Is LIVE course?', course.kind === 'LIVE');
+      
       this.checkEnrollmentStatus(course.id);
       this.loadCurriculum(course.id);
+      
+      if (course.kind === 'LIVE') {
+        console.log('Loading live sessions for LIVE course...');
+        this.loadLiveSessions(course.id);
+        // Subscribe immediately to trigger the HTTP call
+        this.liveSessions$.subscribe();
+      } else {
+        console.log('Not a LIVE course, skipping session load');
+      }
     })
   );
 
   curriculum$: Observable<CurriculumResponse | null> = of(null);
+  liveSessions$: Observable<LiveSession[]> = of([]);
   
   activeTab: 'overview' | 'syllabus' | 'reviews' | 'schedule' = 'overview';
   isEnrolling = false;
@@ -400,6 +689,32 @@ export class CourseDetailComponent {
 
   loadCurriculum(courseId: number): void {
     this.curriculum$ = this.http.get<CurriculumResponse>(`/api/courses/${courseId}/curriculum`);
+  }
+
+  loadLiveSessions(courseId: number): void {
+    console.log(`%c[LiveSessions] Loading sessions for course ${courseId}`, 'color: blue; font-weight: bold');
+    console.log(`%c[LiveSessions] API endpoint: /api/courses/${courseId}/sessions`, 'color: blue');
+    
+    this.liveSessions$ = this.http.get<LiveSession[]>(`/api/courses/${courseId}/sessions`).pipe(
+      tap({
+        next: (sessions) => {
+          console.log(`%c[LiveSessions] ✓ Successfully loaded ${sessions.length} sessions`, 'color: green; font-weight: bold');
+          console.log('[LiveSessions] Sessions data:', sessions);
+          if (sessions.length === 0) {
+            console.warn('%c[LiveSessions] ⚠ No sessions found for this course', 'color: orange; font-weight: bold');
+          }
+        },
+        error: (error) => {
+          console.error('%c[LiveSessions] ✗ Error loading sessions:', 'color: red; font-weight: bold', error);
+          console.error('[LiveSessions] Error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            message: error.message,
+            url: error.url
+          });
+        }
+      })
+    );
   }
 
   checkEnrollmentStatus(courseId: number): void {

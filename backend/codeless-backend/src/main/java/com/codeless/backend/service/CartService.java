@@ -167,5 +167,61 @@ public class CartService {
         
         return items;
     }
+
+    /**
+     * Validate cart and remove unpublished courses
+     * Returns list of removed course titles for user notification
+     */
+    @Transactional
+    public List<String> validateAndCleanCart(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userEmail));
+        
+        Cart cart = cartRepository.findByUserIdWithItems(user.getId())
+                .orElse(null);
+        
+        if (cart == null || cart.getItems().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<String> removedCourseTitles = new ArrayList<>();
+        
+        // Find and remove items with unpublished courses
+        cart.getItems().removeIf(item -> {
+            Course course = item.getCourse();
+            if (course.getPublished() == null || !course.getPublished()) {
+                removedCourseTitles.add(course.getTitle());
+                return true;
+            }
+            return false;
+        });
+        
+        // Save if any items were removed
+        if (!removedCourseTitles.isEmpty()) {
+            cart.setUpdatedAt(OffsetDateTime.now());
+            cartRepository.save(cart);
+        }
+        
+        return removedCourseTitles;
+    }
+
+    /**
+     * Validate guest cart course IDs and filter out unpublished courses
+     * Returns filtered list of valid course IDs
+     */
+    @Transactional(readOnly = true)
+    public List<Long> validateGuestCart(List<Long> courseIds) {
+        List<Long> validCourseIds = new ArrayList<>();
+        
+        for (Long courseId : courseIds) {
+            courseRepository.findById(courseId).ifPresent(course -> {
+                if (course.getPublished() != null && course.getPublished()) {
+                    validCourseIds.add(courseId);
+                }
+            });
+        }
+        
+        return validCourseIds;
+    }
 }
 

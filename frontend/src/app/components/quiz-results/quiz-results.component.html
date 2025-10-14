@@ -46,6 +46,12 @@
         <div class="stat-value">{{ getTimeSpentDisplay() }}</div>
         <div class="stat-label">Time Spent</div>
       </div>
+
+      <div class="stat-card highlight">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value">{{ result.bestScore | number:'1.0-1' }}%</div>
+        <div class="stat-label">Best Score</div>
+      </div>
     </div>
 
     <!-- Question Results -->

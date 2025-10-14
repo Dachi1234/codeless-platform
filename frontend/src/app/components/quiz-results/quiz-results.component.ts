@@ -19,6 +19,7 @@ interface QuestionResult {
 interface AttemptResult {
   attemptId: number;
   score: number;
+  bestScore: number; // Best score from all attempts
   passed: boolean;
   timeSpentSeconds: number;
   completedAt: string;

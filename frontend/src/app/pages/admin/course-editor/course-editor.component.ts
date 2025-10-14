@@ -95,8 +95,9 @@ export class CourseEditorComponent implements OnInit {
           instructorBio: course.instructorBio,
           durationHours: course.durationHours,
           maxStudents: course.maxStudents,
-          startDate: course.startDate,
-          endDate: course.endDate,
+          // Convert ISO dates to datetime-local format for input fields
+          startDate: course.startDate ? this.toDatetimeLocalString(course.startDate) : null,
+          endDate: course.endDate ? this.toDatetimeLocalString(course.endDate) : null,
           sessionCount: course.sessionCount,
           published: course.published,
           imageUrl: course.imageUrl || ''
@@ -220,11 +221,41 @@ export class CourseEditorComponent implements OnInit {
   }
 
   removeImage(): void {
-    if (confirm('Are you sure you want to remove this image?')) {
+    if (!confirm('Are you sure you want to remove this image?')) {
+      return;
+    }
+
+    // If editing an existing course, call the backend to remove the image
+    if (this.isEditMode && this.courseId && this.form.imageUrl) {
+      this.http.delete(`/api/admin/courses/${this.courseId}/image`).subscribe({
+        next: () => {
+          this.selectedFile = null;
+          this.imagePreview = null;
+          this.form.imageUrl = '';
+          alert('Image removed successfully');
+        },
+        error: (err) => {
+          console.error('Error removing image:', err);
+          alert('Failed to remove image: ' + (err.error?.error || err.message));
+        }
+      });
+    } else {
+      // For new courses or if no image was uploaded yet, just clear the preview
       this.selectedFile = null;
       this.imagePreview = null;
       this.form.imageUrl = '';
     }
+  }
+
+  // Convert ISO string to datetime-local format (YYYY-MM-DDTHH:mm)
+  private toDatetimeLocalString(isoString: string): string {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 }
 

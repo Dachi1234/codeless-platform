@@ -17,6 +17,18 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     
     @Query("SELECT e FROM Enrollment e WHERE e.user.id = :userId AND e.course.id = :courseId")
     java.util.Optional<Enrollment> findByUserIdAndCourseId(Long userId, Long courseId);
+    
+    /**
+     * Count total enrollments for a specific course
+     */
+    long countByCourseId(Long courseId);
+    
+    /**
+     * Get enrollment counts for multiple courses
+     * Returns a map of courseId -> enrollmentCount
+     */
+    @Query("SELECT e.course.id, COUNT(e) FROM Enrollment e WHERE e.course.id IN :courseIds GROUP BY e.course.id")
+    List<Object[]> countEnrollmentsByCourseIds(List<Long> courseIds);
 }
 
 
