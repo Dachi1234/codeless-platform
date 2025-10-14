@@ -2,8 +2,8 @@
 
 **Last Updated**: October 14, 2025  
 **Status**: Active Bug Tracking  
-**Total Issues**: 17  
-**Fixed**: 15 | **Remaining**: 2
+**Total Issues**: 19 (17 original + 2 hotfixes)  
+**Fixed**: 17 | **Remaining**: 2
 
 ---
 
@@ -167,6 +167,39 @@
 
 ---
 
+## 🔥 **Critical Hotfixes**
+
+### 18. Checkout Page Empty Cart ✅ **FIXED**
+**Location**: Checkout Page  
+**Issue**: After clicking "Proceed to Checkout", the checkout page showed "Your cart is empty" despite items being in the cart.  
+**Impact**: Critical - Blocks purchase flow  
+**Status**: ✅ **Fixed** - October 14, 2025  
+**Root Cause**: Checkout component still using old HTTP-based cart loading instead of reactive signals after CartService refactor  
+**Solution**:
+- Migrated checkout component to use computed signals from CartService
+- `cartItems = computed(() => this.cartService.getCartItems())`
+- Updated all template references from `cartItems` to `cartItems()`
+- Removed unnecessary HTTP call in `ngOnInit()`
+- Cart now displays correctly on checkout page
+
+### 19. Filters Overlapping on Courses Page ✅ **FIXED**
+**Location**: Courses Page > Filter Bar  
+**Issue**: Category filter overlapping with Level and Type filters, especially with long category names.  
+**Impact**: High - Poor UX, hard to use filters  
+**Status**: ✅ **Fixed** - October 14, 2025  
+**Root Cause**: Rigid CSS Grid layout couldn't handle varying content widths  
+**Solution**:
+- Changed from CSS Grid to Flexbox with wrapping
+- Increased gap spacing from 12px to 16px
+- Search input: flexible width (300px min, can grow)
+- Filters: fixed width (200-220px, won't shrink with flex-shrink: 0)
+- Added responsive breakpoints:
+  - **< 1200px**: Search takes full width on separate row
+  - **< 640px**: All filters stack vertically
+- Prevents overlapping with proper spacing and text-overflow: ellipsis
+
+---
+
 ## 🟢 **Low Priority**
 
 ### 15. Remove Course from Cart - Confirmation Popup ✅ **FIXED**
@@ -215,8 +248,8 @@
 
 | Category | Count | Fixed |
 |----------|-------|-------|
-| Cart & Checkout | 3 | 3 ✅ |
-| Navigation & UI | 4 | 3 ✅ |
+| Cart & Checkout | 4 | 4 ✅ |
+| Navigation & UI | 5 | 4 ✅ |
 | Course Filtering & Sorting | 5 | 5 ✅ |
 | Authentication | 2 | 2 ✅ |
 | Admin Panel | 1 | 0 |
@@ -244,10 +277,10 @@
 ## 🎉 **Completed Categories**
 
 ✅ **Course Filtering & Sorting** - 5/5 bugs fixed (100%)  
-✅ **Cart & Checkout** - 3/3 bugs fixed (100%)  
+✅ **Cart & Checkout** - 4/4 bugs fixed (100%)  
 ✅ **Authentication** - 2/2 bugs fixed (100%)  
 ✅ **Learning Experience** - 2/2 bugs fixed (100%)  
-✅ **Navigation & UI** - 3/4 bugs fixed (75%)
+✅ **Navigation & UI** - 4/5 bugs fixed (80%)
 
 ---
 
@@ -272,16 +305,17 @@ When a bug is fixed:
 - ✅ Fixed 2 high-priority bugs (guest cart, email validation)
 - ✅ Fixed 9 medium-priority bugs (home scroll, popularity sort, dynamic categories, course counter, filter clear buttons, sort visual diff, cart icon, remember me, lesson indicator)
 - ✅ Fixed 2 low-priority bugs (cart confirmation, terms validation)
+- ✅ Fixed 2 critical hotfixes (checkout empty cart, filters overlapping)
 - ✅ Verified 2 bugs already working (logo navigation, price sort)
 - 🟡 Identified performance issue (multiple API requests)
-- **Total Progress**: 15 bugs resolved/verified out of 17 (88% complete!) 🎉
+- **Total Progress**: 17 bugs resolved/verified out of 19 (89% complete!) 🎉
 
 ### Remaining Work:
 - 2 open items (1 skipped feature, 1 performance optimization)
 - **5 COMPLETE CATEGORIES! ✅**
 - **All Course Filtering & Sorting bugs COMPLETE! ✅**
-- **All Navigation & UI polish items COMPLETE! ✅**
 - **All Cart & Checkout bugs COMPLETE! ✅**
 - **All Authentication bugs COMPLETE! ✅**
 - **All Learning Experience bugs COMPLETE! ✅**
+- **Navigation & UI**: 4/5 bugs fixed (80%)
 
