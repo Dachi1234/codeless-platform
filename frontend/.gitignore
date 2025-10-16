@@ -43,3 +43,7 @@ Thumbs.db
 
 # Environment files are now committed (TinyMCE keys are client-side and domain-restricted)
 # See environment.template.ts for guidelines on what's safe to commit
+
+# Vercel serverless function environment variables (NEVER commit these)
+.env.local
+.env*.local
