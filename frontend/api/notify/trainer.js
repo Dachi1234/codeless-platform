@@ -33,86 +33,99 @@ VP, Product Strategy — Codeless Digital
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Helper: map tones to allow-list
+const TONES = new Set(['neutral','warning','escalation','executive']);
+
 module.exports = async (req, res) => {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
-  // ---- Security (Bearer) ----
-  const auth = req.headers.authorization;
-  if (!auth || auth !== `Bearer ${process.env.EMAIL_API_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  // ---- Env checks ----
-  const required = ['SENDGRID_API_KEY', 'EMAIL_FROM', 'EMAIL_TO', 'OPENAI_API_KEY'];
-  for (const k of required) {
-    if (!process.env[k]) return res.status(500).json({ error: `Missing env ${k}` });
-  }
-
-  // ---- Query params ----
-  const qp = req.query || {};
-  const subject = qp.s;
-  const message = qp.m;
-  const student = qp.student;
-  const project = qp.project;
-  const tone = (qp.tone || 'neutral').toLowerCase(); // neutral|warning|escalation|executive
-
-  if (!subject || !message) {
-    return res.status(400).json({ error: 'Missing s (subject) or m (message)' });
-  }
-
-  // Build user prompt for GPT
-  const contextLines = [
-    student ? `PM: ${student}` : null,
-    project ? `Project: ${project}` : null,
-    `Tone: ${tone}`,
-    `Context: ${message}`
-  ].filter(Boolean).join('\n');
-
-  let emailBody;
-
-  // ---- Generate with OpenAI (fallback to static if fails) ----
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      temperature: 0.3,
-      max_tokens: 400,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `Subject: ${subject}\n${contextLines}\n\nWrite the email body only (no subject):` }
-      ]
-    });
+    if (req.method !== 'GET') {
+      return res.status(405).json({ error: 'method_not_allowed' });
+    }
 
-    emailBody = (completion.choices?.[0]?.message?.content || '').trim();
-    if (!emailBody) throw new Error('empty_completion');
-  } catch {
-    // Fallback (simple Markdown)
-    const header =
-      tone === 'escalation' ? '**Escalation Notice**' :
-      tone === 'executive'  ? '**Executive Notice**'  :
-      tone === 'warning'    ? '**Formal Warning**'    :
-                              '**Notification**';
+    // ---- Auth (Bearer) ----
+    const auth = req.headers.authorization;
+    const expected = process.env.EMAIL_API_SECRET;
+    if (!expected) {
+      return res.status(500).json({ error: 'server_misconfig', detail: 'Missing env EMAIL_API_SECRET' });
+    }
+    if (!auth || auth !== `Bearer ${expected}`) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
 
-    const identity = [
-      student ? `**PM:** ${student}` : null,
-      project ? `**Project:** ${project}` : null
-    ].filter(Boolean).join('  \n');
+    // ---- Required envs for services ----
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ error: 'server_misconfig', detail: 'Missing env OPENAI_API_KEY' });
+    }
+    if (!process.env.SENDGRID_API_KEY) {
+      return res.status(500).json({ error: 'server_misconfig', detail: 'Missing env SENDGRID_API_KEY' });
+    }
 
-    emailBody = [
-      header,
-      identity,
-      '',
-      message,
-      '',
-      'Regards,',
-      'Laura Stakeholder',
-      'VP, Product Strategy — Codeless Digital'
+    // ---- Query params ----
+    const qp = req.query || {};
+    const subject = String(qp.s || '').slice(0, 200).trim();
+    const message = String(qp.m || '').slice(0, 1200).trim();
+    const student = qp.student ? String(qp.student).slice(0, 200).trim() : '';
+    const project = qp.project ? String(qp.project).slice(0, 300).trim() : '';
+    const tone = TONES.has((qp.tone || '').toLowerCase()) ? (qp.tone || 'neutral').toLowerCase() : 'neutral';
+
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'bad_request', detail: 'Missing s (subject) or m (message)' });
+    }
+
+    // ---- Email targets (env with safe defaults) ----
+    const EMAIL_FROM = (process.env.EMAIL_FROM).trim();
+    const EMAIL_TO   = (process.env.EMAIL_TO).trim();
+
+    // ---- Build user prompt for GPT ----
+    const contextLines = [
+      student ? `PM: ${student}` : null,
+      project ? `Project: ${project}` : null,
+      `Tone: ${tone}`,
+      `Context: ${message}`
     ].filter(Boolean).join('\n');
-  }
 
-  // ---- Send via SendGrid ----
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    // ---- Generate with OpenAI (fallback to static if fails) ----
+    let emailBody = '';
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4.1-mini',
+        temperature: 0.3,
+        max_tokens: 400,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: `Subject: ${subject}\n${contextLines}\n\nWrite the email body only (no subject):` }
+        ]
+      });
+      emailBody = (completion.choices?.[0]?.message?.content || '').trim();
+      if (!emailBody) throw new Error('empty_completion');
+    } catch (genErr) {
+      const header =
+        tone === 'escalation' ? '**Escalation Notice**' :
+        tone === 'executive'  ? '**Executive Notice**'  :
+        tone === 'warning'    ? '**Formal Warning**'    :
+                                '**Notification**';
 
-  try {
+      const identity = [
+        student ? `**PM:** ${student}` : null,
+        project ? `**Project:** ${project}` : null
+      ].filter(Boolean).join('  \n');
+
+      emailBody = [
+        header,
+        identity,
+        '',
+        message,
+        '',
+        'Regards,',
+        'Laura Stakeholder',
+        'VP, Product Strategy — Codeless Digital'
+      ].filter(Boolean).join('\n');
+    }
+
+    // ---- Send via SendGrid ----
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    // Basic HTML-safe transform for Markdown **bold** + line breaks
     const html = emailBody
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -120,16 +133,25 @@ module.exports = async (req, res) => {
 
     const text = emailBody.replace(/<[^>]*>/g, '').replace(/\*\*/g, '');
 
-    await sgMail.send({
-      to: process.env.EMAIL_TO,
-      from: { email: process.env.EMAIL_FROM, name: 'Laura Stakeholder' },
-      subject,
-      text,
-      html
-    });
+    try {
+      await sgMail.send({
+        to: EMAIL_TO,
+        from: { email: EMAIL_FROM, name: 'Laura Stakeholder' },
+        subject,
+        text,
+        html
+      });
+    } catch (sendErr) {
+      // Surface the true cause to the caller so you don’t get a vague 500 in the GPT Action logs
+      return res.status(502).json({
+        error: 'sendgrid_send_failed',
+        detail: sendErr?.response?.body || sendErr?.message || String(sendErr)
+      });
+    }
 
     return res.status(200).json({ ok: true });
-  } catch (err) {
-    return res.status(500).json({ error: 'send_failed', detail: err?.message || String(err) });
+  } catch (e) {
+    // Last-resort handler
+    return res.status(500).json({ error: 'unhandled_server_error', detail: e?.message || String(e) });
   }
 };
