@@ -11,9 +11,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @io.swagger.v3.oas.annotations.security.SecurityScheme(
         name = "bearerAuth",
         type = io.swagger.v3.oas.annotations.enums.SecuritySchemeType.HTTP,
@@ -57,6 +59,7 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll() // Only GET is public
+                .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll() // Public article reading
                 .requestMatchers("/api/cart/guest/**").permitAll() // Guest cart endpoints
                 .requestMatchers("/api/checkout/webhook/paypal").permitAll()
                 .requestMatchers("/health", "/actuator/**").permitAll()
@@ -66,10 +69,20 @@ public class SecurityConfig {
                 .requestMatchers("/api/courses/*/reviews/**").authenticated()
                 .requestMatchers("/api/courses/*/reviews").authenticated()
                 
+                // CRITICAL: All /api/admin/** endpoints require ADMIN role (belt + suspenders with @PreAuthorize)
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                
                 // Course management requires ADMIN role
                 .requestMatchers(HttpMethod.POST, "/api/courses/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/courses/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/courses/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/courses/**").hasRole("ADMIN")
+                
+                // Article management requires ADMIN role
+                .requestMatchers(HttpMethod.POST, "/api/articles/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/articles/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/articles/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/articles/**").hasRole("ADMIN")
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()

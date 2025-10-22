@@ -43,9 +43,15 @@ export class AuthService {
   
   // Callback for when auth state changes (used by CartService)
   private authChangeCallbacks: Array<(authenticated: boolean) => void> = [];
+  
+  // Periodic role verification to detect role changes (e.g., admin demotion)
+  private roleVerificationInterval: any;
+  private readonly ROLE_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     // Don't auto-initialize; let APP_INITIALIZER handle it
+    // Start periodic role verification
+    this.startRoleVerification();
   }
   
   /**
@@ -140,6 +146,63 @@ export class AuthService {
     this.clearToken();
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
+    this.stopRoleVerification();
+  }
+  
+  /**
+   * Start periodic role verification
+   * This detects if user roles change (e.g., admin demotion)
+   */
+  private startRoleVerification(): void {
+    // Clear any existing interval
+    this.stopRoleVerification();
+    
+    // Check roles periodically
+    this.roleVerificationInterval = setInterval(() => {
+      if (this.isAuthenticated() && this.getToken()) {
+        this.me().subscribe({
+          next: (user) => {
+            const currentRoles = this.getUserRoles();
+            const newRoles = user.roles || [];
+            
+            // Check if roles changed (e.g., admin was demoted)
+            const rolesChanged = JSON.stringify(currentRoles.sort()) !== JSON.stringify(newRoles.sort());
+            
+            if (rolesChanged) {
+              console.warn('⚠️ User roles changed! Updating...');
+              console.log('Old roles:', currentRoles);
+              console.log('New roles:', newRoles);
+              
+              // Update user data with new roles
+              this.currentUser.set(user);
+              
+              // If user was admin but no longer is, and they're on admin page, kick them out
+              if (currentRoles.includes('ROLE_ADMIN') && !newRoles.includes('ROLE_ADMIN')) {
+                console.error('🚨 ADMIN ROLE REVOKED - Redirecting to home');
+                window.location.href = '/';
+              }
+            }
+          },
+          error: (err) => {
+            // If token is invalid, logout
+            if (err.status === 401) {
+              console.error('❌ Token expired during role verification');
+              this.logout();
+            }
+          }
+        });
+      }
+    }, this.ROLE_CHECK_INTERVAL);
+  }
+  
+  /**
+   * Stop periodic role verification
+   */
+  private stopRoleVerification(): void {
+    if (this.roleVerificationInterval) {
+      clearInterval(this.roleVerificationInterval);
+      this.roleVerificationInterval = null;
+    }
   }
 
   getToken(): string | null {
