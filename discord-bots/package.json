@@ -1,0 +1,31 @@
+{
+  "name": "codeless-discord-bots",
+  "version": "1.0.0",
+  "description": "Multi-agent Discord bots with n8n integration",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Tests coming soon\" && exit 0"
+  },
+  "keywords": ["discord", "bot", "n8n", "agents"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "pg": "^8.11.5",
+    "dotenv": "^16.4.5",
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/pg": "^8.11.6",
+    "typescript": "^5.4.5",
+    "tsx": "^4.10.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

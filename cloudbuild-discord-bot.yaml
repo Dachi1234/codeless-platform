@@ -1,0 +1,68 @@
+# Cloud Build configuration for Discord Bot deployment
+# Triggered on push to main branch when discord-bots/ files change
+
+steps:
+  # Step 1: Build the Discord Bot Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/discord-bot-laura:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/discord-bot-laura:latest'
+      - '-f'
+      - 'discord-bots/Dockerfile'
+      - 'discord-bots/'
+    timeout: 600s  # 10 minutes
+
+  # Step 2: Push the image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/discord-bot-laura:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/discord-bot-laura:latest'
+
+  # Step 3: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'discord-bot-laura'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/discord-bot-laura:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--cpu'
+      - '1'
+      - '--memory'
+      - '512Mi'
+      - '--min-instances'
+      - '1'
+      - '--max-instances'
+      - '1'
+      - '--set-env-vars'
+      - 'AGENT_NAME=laura,MAX_CONTEXT_MESSAGES=10,LOG_LEVEL=info,AGENT_RESPONSE_TIMEOUT=30000'
+      - '--set-secrets'
+      - 'DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest,DATABASE_URL=DISCORD_DATABASE_URL:latest,N8N_WEBHOOK_URL=N8N_WEBHOOK_URL:latest'
+
+# Images to be pushed to Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/discord-bot-laura:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/discord-bot-laura:latest'
+
+# Build timeout (15 minutes total)
+timeout: 900s
+
+# Build options
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
