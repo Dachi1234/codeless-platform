@@ -40,7 +40,8 @@ export class DatabaseService {
       ssl: { rejectUnauthorized: false },
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      connectionTimeoutMillis: 30000, // Increased for Neon cold starts
+      query_timeout: 20000, // Query timeout: 20 seconds
     });
 
     this.pool.on('error', (err: Error) => {
