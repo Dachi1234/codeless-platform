@@ -46,11 +46,13 @@ export class N8nService {
   ): Promise<string> {
     try {
       // Build conversation context from history
-      const conversationContext = conversationHistory.map((msg) => ({
-        sender: msg.senderType === 'student' ? 'user' : msg.agentName || 'agent',
-        content: msg.content,
-        timestamp: msg.createdAt.toISOString(),
-      }));
+      const conversationContext = conversationHistory
+        .filter((msg) => msg && msg.createdAt) // Filter out invalid messages
+        .map((msg) => ({
+          sender: msg.senderType === 'student' ? 'user' : msg.agentName || 'agent',
+          content: msg.content,
+          timestamp: msg.createdAt.toISOString(),
+        }));
 
       // Prepare request payload
       const payload: N8nRequest = {
