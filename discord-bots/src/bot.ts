@@ -115,7 +115,9 @@ export class DiscordBot {
       );
 
       // Show typing indicator
-      await message.channel.sendTyping();
+      if ('sendTyping' in message.channel) {
+        await message.channel.sendTyping();
+      }
 
       // Get conversation history
       const conversationHistory = await this.db.getRecentMessages(
