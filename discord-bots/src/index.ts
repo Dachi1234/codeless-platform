@@ -1,4 +1,5 @@
 import { DiscordBot } from './bot';
+import http from 'http';
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (error) => {
@@ -18,10 +19,27 @@ async function main() {
 
   const bot = new DiscordBot();
 
+  // Create HTTP health check server for Cloud Run
+  const PORT = process.env.PORT || 8080;
+  const server = http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('Discord bot is running');
+    } else {
+      res.writeHead(404);
+      res.end('Not found');
+    }
+  });
+
+  server.listen(PORT, () => {
+    console.log(`✅ Health check server listening on port ${PORT}`);
+  });
+
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
     console.log(`\n📡 Received ${signal}, shutting down gracefully...`);
     try {
+      server.close();
       await bot.stop();
       process.exit(0);
     } catch (error) {
