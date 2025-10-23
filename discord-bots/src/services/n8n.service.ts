@@ -3,6 +3,7 @@ import { config } from '../config';
 import { Message } from './database.service';
 
 export interface N8nRequest {
+  sessionId: string;
   channelId: string;
   userId: string;
   username: string;
@@ -53,6 +54,7 @@ export class N8nService {
 
       // Prepare request payload
       const payload: N8nRequest = {
+        sessionId: channelId, // Use channelId as session ID for conversation tracking
         channelId,
         userId,
         username,
@@ -120,6 +122,7 @@ export class N8nService {
   async testWebhook(): Promise<boolean> {
     try {
       const testPayload: N8nRequest = {
+        sessionId: 'test-session',
         channelId: 'test',
         userId: 'test-user',
         username: 'Test User',
