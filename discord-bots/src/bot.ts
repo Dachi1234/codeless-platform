@@ -90,40 +90,48 @@ export class DiscordBot {
         }
       }
 
-      // Get or create conversation
-      const conversation = await this.db.getOrCreateConversation(
-        message.channel.id,
-        channelType,
-        guildId,
-        channelName
-      );
-
-      // Save student message
-      await this.db.saveMessage(
-        conversation.id,
-        message.id,
-        message.author.id,
-        'student',
-        message.content
-      );
-
-      // Update student profile
-      await this.db.getOrCreateStudentProfile(
-        message.author.id,
-        message.author.username,
-        message.author.displayName || null
-      );
-
       // Show typing indicator
       if ('sendTyping' in message.channel) {
         await message.channel.sendTyping();
       }
 
-      // Get conversation history
-      const conversationHistory = await this.db.getRecentMessages(
-        conversation.id,
-        config.agent.maxContextMessages
-      );
+      // Try to use database, but continue without it if it fails
+      let conversationHistory: any[] = [];
+      
+      try {
+        // Get or create conversation
+        const conversation = await this.db.getOrCreateConversation(
+          message.channel.id,
+          channelType,
+          guildId,
+          channelName
+        );
+
+        // Save student message
+        await this.db.saveMessage(
+          conversation.id,
+          message.id,
+          message.author.id,
+          'student',
+          message.content
+        );
+
+        // Update student profile
+        await this.db.getOrCreateStudentProfile(
+          message.author.id,
+          message.author.username,
+          message.author.displayName || null
+        );
+
+        // Get conversation history
+        conversationHistory = await this.db.getRecentMessages(
+          conversation.id,
+          config.agent.maxContextMessages
+        );
+      } catch (dbError) {
+        console.warn('⚠️ Database unavailable, continuing without conversation history:', dbError);
+        conversationHistory = [];
+      }
 
       // Send to n8n and get agent response
       const agentResponse = await this.n8n.sendToAgent(
@@ -137,15 +145,26 @@ export class DiscordBot {
       // Send response back to Discord
       const botMessage = await message.reply(agentResponse);
 
-      // Save agent message
-      await this.db.saveMessage(
-        conversation.id,
-        botMessage.id,
-        this.client.user?.id || 'bot',
-        'agent',
-        agentResponse,
-        this.agentName
-      );
+      // Try to save agent message (if database is available)
+      try {
+        const conversation = await this.db.getOrCreateConversation(
+          message.channel.id,
+          channelType,
+          guildId,
+          channelName
+        );
+        
+        await this.db.saveMessage(
+          conversation.id,
+          botMessage.id,
+          this.client.user?.id || 'bot',
+          'agent',
+          agentResponse,
+          this.agentName
+        );
+      } catch (dbError) {
+        console.warn('⚠️ Could not save bot response to database');
+      }
 
       console.log(`✅ Response sent successfully`);
     } catch (error) {
