@@ -59,7 +59,7 @@ export const config: BotConfig = {
   agent: {
     name: process.env.AGENT_NAME || 'laura',
     maxContextMessages: parseInt(process.env.MAX_CONTEXT_MESSAGES || '10', 10),
-    responseTimeout: parseInt(process.env.AGENT_RESPONSE_TIMEOUT || '30000', 10),
+    responseTimeout: parseInt(process.env.AGENT_RESPONSE_TIMEOUT || '60000', 10),
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
