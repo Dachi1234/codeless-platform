@@ -134,7 +134,7 @@ export class DiscordBot {
       }
 
       // Send to n8n and get agent response
-      const agentResponse = await this.n8n.sendToAgent(
+      const { response: agentResponse, profileUpdates } = await this.n8n.sendToAgent(
         message.channel.id,
         message.author.id,
         message.author.username,
@@ -145,7 +145,7 @@ export class DiscordBot {
       // Send response back to Discord
       const botMessage = await message.reply(agentResponse);
 
-      // Try to save agent message (if database is available)
+      // Try to save agent message and profile updates (if database is available)
       try {
         const conversation = await this.db.getOrCreateConversation(
           message.channel.id,
@@ -162,8 +162,14 @@ export class DiscordBot {
           agentResponse,
           this.agentName
         );
+
+        // Update student profile if Laura provided updates
+        if (profileUpdates) {
+          console.log('📝 Updating student profile with Laura\'s observations...');
+          await this.db.updateStudentProfile(message.author.id, profileUpdates);
+        }
       } catch (dbError) {
-        console.warn('⚠️ Could not save bot response to database');
+        console.warn('⚠️ Could not save bot response or profile updates to database');
       }
 
       console.log(`✅ Response sent successfully`);

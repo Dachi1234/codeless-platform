@@ -17,6 +17,16 @@ export interface N8nRequest {
 
 export interface N8nResponse {
   response: string;
+  profile_updates?: {
+    tension_level?: number;
+    trust_level?: number;
+    notes?: string;
+    current_project?: string;
+    name?: string;
+    cohort?: string;
+    timezone?: string;
+    deadline_mvp?: string;
+  };
   metadata?: {
     tokens?: number;
     processingTime?: number;
@@ -43,7 +53,7 @@ export class N8nService {
     username: string,
     message: string,
     conversationHistory: Message[]
-  ): Promise<string> {
+  ): Promise<{ response: string; profileUpdates?: N8nResponse['profile_updates'] }> {
     try {
       // Build conversation context from history
       const conversationContext = conversationHistory
@@ -90,6 +100,7 @@ export class N8nService {
 
       console.log(`📥 Received from n8n:`, {
         responseLength: response.data.response?.length || 0,
+        hasProfileUpdates: !!response.data.profile_updates,
         metadata: response.data.metadata,
       });
 
@@ -100,7 +111,10 @@ export class N8nService {
         throw new Error('n8n response missing "response" field');
       }
 
-      return agentResponse;
+      return {
+        response: agentResponse,
+        profileUpdates: response.data.profile_updates,
+      };
     } catch (error) {
       console.error('❌ n8n webhook error:', error);
 

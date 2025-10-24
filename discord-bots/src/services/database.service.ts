@@ -192,6 +192,85 @@ export class DatabaseService {
   }
 
   /**
+   * Update student profile with data from Laura
+   */
+  async updateStudentProfile(
+    discordUserId: string,
+    updates: {
+      tension_level?: number;
+      trust_level?: number;
+      notes?: string;
+      current_project?: string;
+      name?: string;
+      cohort?: string;
+      timezone?: string;
+      deadline_mvp?: string;
+    }
+  ): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      const setParts: string[] = [];
+      const values: any[] = [discordUserId];
+      let paramIndex = 2;
+
+      if (updates.tension_level !== undefined) {
+        setParts.push(`tension_level = $${paramIndex++}`);
+        values.push(updates.tension_level);
+      }
+
+      if (updates.trust_level !== undefined) {
+        setParts.push(`trust_level = $${paramIndex++}`);
+        values.push(updates.trust_level);
+      }
+
+      if (updates.notes !== undefined) {
+        setParts.push(`notes = $${paramIndex++}`);
+        values.push(updates.notes);
+      }
+
+      if (updates.current_project !== undefined) {
+        setParts.push(`current_project = $${paramIndex++}`);
+        values.push(updates.current_project);
+      }
+
+      if (updates.name !== undefined) {
+        setParts.push(`name = $${paramIndex++}`);
+        values.push(updates.name);
+      }
+
+      if (updates.cohort !== undefined) {
+        setParts.push(`cohort = $${paramIndex++}`);
+        values.push(updates.cohort);
+      }
+
+      if (updates.timezone !== undefined) {
+        setParts.push(`timezone = $${paramIndex++}`);
+        values.push(updates.timezone);
+      }
+
+      if (updates.deadline_mvp !== undefined) {
+        setParts.push(`deadline_mvp = $${paramIndex++}`);
+        values.push(updates.deadline_mvp);
+      }
+
+      if (setParts.length === 0) {
+        return; // Nothing to update
+      }
+
+      await client.query(
+        `UPDATE discord_bots.student_profiles 
+         SET ${setParts.join(', ')}, last_seen_at = NOW()
+         WHERE discord_user_id = $1`,
+        values
+      );
+
+      console.log(`✅ Updated student profile for ${discordUserId}:`, updates);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Close database connection
    */
   async close(): Promise<void> {
