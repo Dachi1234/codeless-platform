@@ -49,7 +49,7 @@ steps:
       - '--max-instances'
       - '1'
       - '--set-env-vars'
-      - 'AGENT_NAME=laura,MAX_CONTEXT_MESSAGES=10,LOG_LEVEL=info,AGENT_RESPONSE_TIMEOUT=30000'
+      - 'AGENT_NAME=laura,MAX_CONTEXT_MESSAGES=10,LOG_LEVEL=info,AGENT_RESPONSE_TIMEOUT=120000'
       - '--set-secrets'
       - 'DISCORD_BOT_TOKEN=DISCORD_BOT_TOKEN:latest,DATABASE_URL=DISCORD_DATABASE_URL:latest,N8N_WEBHOOK_URL=N8N_WEBHOOK_URL:latest'
 
