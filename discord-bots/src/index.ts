@@ -1,4 +1,5 @@
 import { DiscordBot } from './bot';
+import { config } from './config';
 import http from 'http';
 
 // Handle unhandled promise rejections
@@ -15,16 +16,25 @@ process.on('uncaughtException', (error) => {
 
 // Main function
 async function main() {
-  console.log('🚀 Initializing Discord bot...');
+  console.log('🚀 Initializing Multi-Bot Discord Service...');
+  console.log(`📊 Configured bots: ${config.bots.map(b => b.name).join(', ')}`);
 
-  const bot = new DiscordBot();
+  // Create bot instances for each configured bot
+  const bots = config.bots.map((botConfig) => {
+    console.log(`🤖 Creating bot instance: ${botConfig.name}`);
+    return new DiscordBot(botConfig);
+  });
 
   // Create HTTP health check server for Cloud Run
   const PORT = process.env.PORT || 8080;
   const server = http.createServer((req, res) => {
     if (req.url === '/health' || req.url === '/') {
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end('Discord bot is running');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'running',
+        bots: config.bots.map(b => b.name),
+        timestamp: new Date().toISOString()
+      }));
     } else {
       res.writeHead(404);
       res.end('Not found');
@@ -40,7 +50,8 @@ async function main() {
     console.log(`\n📡 Received ${signal}, shutting down gracefully...`);
     try {
       server.close();
-      await bot.stop();
+      // Stop all bots
+      await Promise.all(bots.map(bot => bot.stop()));
       process.exit(0);
     } catch (error) {
       console.error('❌ Error during shutdown:', error);
@@ -51,8 +62,11 @@ async function main() {
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-  // Start the bot
-  await bot.start();
+  // Start all bots
+  console.log(`\n🚀 Starting ${bots.length} bot(s)...\n`);
+  await Promise.all(bots.map(bot => bot.start()));
+  
+  console.log(`\n✅ All ${bots.length} bot(s) are now online!\n`);
 }
 
 // Run

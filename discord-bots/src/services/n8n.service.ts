@@ -38,10 +38,10 @@ export class N8nService {
   private authHeader?: string;
   private timeout: number;
 
-  constructor() {
-    this.webhookUrl = config.n8n.webhookUrl;
+  constructor(webhookUrl: string, timeout: number) {
+    this.webhookUrl = webhookUrl;
     this.authHeader = config.n8n.authHeader;
-    this.timeout = config.agent.responseTimeout;
+    this.timeout = timeout;
   }
 
   /**
@@ -74,7 +74,7 @@ export class N8nService {
         conversationContext,
       };
 
-      console.log(`📤 Sending to n8n (${config.agent.name}):`, {
+      console.log(`📤 Sending to n8n:`, {
         user: username,
         messageLength: message.length,
         contextMessages: conversationContext.length,

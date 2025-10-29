@@ -1,5 +1,5 @@
 import { Client, Message, ChannelType } from 'discord.js';
-import { config } from './config';
+import { config, SingleBotConfig } from './config';
 import { DatabaseService } from './services/database.service';
 import { N8nService } from './services/n8n.service';
 
@@ -7,17 +7,20 @@ export class DiscordBot {
   private client: Client;
   private db: DatabaseService;
   private n8n: N8nService;
-  private agentName: string;
+  private botConfig: SingleBotConfig;
+  private botName: string;
 
-  constructor() {
+  constructor(botConfig: SingleBotConfig) {
+    this.botConfig = botConfig;
+    this.botName = botConfig.name;
+
     this.client = new Client({
       intents: config.discord.intents,
       partials: config.discord.partials,
     });
 
     this.db = new DatabaseService();
-    this.n8n = new N8nService();
-    this.agentName = config.agent.name;
+    this.n8n = new N8nService(botConfig.n8nWebhookUrl, botConfig.responseTimeout);
 
     this.setupEventHandlers();
   }
@@ -37,7 +40,7 @@ export class DiscordBot {
   private async onReady(): Promise<void> {
     console.log('\n🤖 ===================================');
     console.log(`✅ Bot logged in as: ${this.client.user?.tag}`);
-    console.log(`🎭 Agent: ${this.agentName.toUpperCase()}`);
+    console.log(`🎭 Agent: ${this.botName.toUpperCase()}`);
     console.log(`📊 Serving ${this.client.guilds.cache.size} servers`);
     console.log('🤖 ===================================\n');
 
@@ -104,7 +107,8 @@ export class DiscordBot {
           message.channel.id,
           channelType,
           guildId,
-          channelName
+          channelName,
+          this.botName
         );
 
         // Save student message
@@ -113,7 +117,8 @@ export class DiscordBot {
           message.id,
           message.author.id,
           'student',
-          message.content
+          message.content,
+          this.botName
         );
 
         // Update student profile
@@ -126,7 +131,7 @@ export class DiscordBot {
         // Get conversation history
         conversationHistory = await this.db.getRecentMessages(
           conversation.id,
-          config.agent.maxContextMessages
+          this.botConfig.maxContextMessages
         );
       } catch (dbError) {
         console.warn('⚠️ Database unavailable, continuing without conversation history:', dbError);
@@ -151,7 +156,8 @@ export class DiscordBot {
           message.channel.id,
           channelType,
           guildId,
-          channelName
+          channelName,
+          this.botName
         );
         
         await this.db.saveMessage(
@@ -160,12 +166,12 @@ export class DiscordBot {
           this.client.user?.id || 'bot',
           'agent',
           agentResponse,
-          this.agentName
+          this.botName
         );
 
-        // Update student profile if Laura provided updates
+        // Update student profile if bot provided updates
         if (profileUpdates) {
-          console.log('📝 Updating student profile with Laura\'s observations...');
+          console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
           await this.db.updateStudentProfile(message.author.id, profileUpdates);
         }
       } catch (dbError) {
@@ -199,10 +205,10 @@ export class DiscordBot {
    */
   async start(): Promise<void> {
     try {
-      console.log('🚀 Starting Discord bot...');
-      await this.client.login(config.discord.token);
+      console.log(`🚀 Starting Discord bot (${this.botName})...`);
+      await this.client.login(this.botConfig.token);
     } catch (error) {
-      console.error('❌ Failed to start bot:', error);
+      console.error(`❌ Failed to start bot (${this.botName}):`, error);
       throw error;
     }
   }

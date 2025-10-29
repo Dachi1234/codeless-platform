@@ -70,14 +70,15 @@ export class DatabaseService {
     channelId: string,
     channelType: 'dm' | 'text' | 'thread',
     guildId: string | null = null,
-    channelName: string | null = null
+    channelName: string | null = null,
+    botName: string = 'laura'
   ): Promise<Conversation> {
     const client = await this.pool.connect();
     try {
-      // Try to get existing conversation
+      // Try to get existing conversation for this channel and bot
       const existingResult = await client.query<Conversation>(
-        'SELECT * FROM discord_bots.conversations WHERE channel_id = $1',
-        [channelId]
+        'SELECT * FROM discord_bots.conversations WHERE channel_id = $1 AND bot_name = $2',
+        [channelId, botName]
       );
 
       if (existingResult.rows.length > 0) {
@@ -92,10 +93,10 @@ export class DatabaseService {
       // Create new conversation
       const insertResult = await client.query<Conversation>(
         `INSERT INTO discord_bots.conversations 
-         (channel_id, channel_type, guild_id, channel_name) 
-         VALUES ($1, $2, $3, $4) 
+         (channel_id, channel_type, guild_id, channel_name, bot_name) 
+         VALUES ($1, $2, $3, $4, $5) 
          RETURNING *`,
-        [channelId, channelType, guildId, channelName]
+        [channelId, channelType, guildId, channelName, botName]
       );
 
       return insertResult.rows[0];
@@ -113,14 +114,14 @@ export class DatabaseService {
     senderId: string,
     senderType: 'student' | 'agent',
     content: string,
-    agentName: string | null = null
+    botName: string | null = null
   ): Promise<Message> {
     const result = await this.pool.query<Message>(
       `INSERT INTO discord_bots.messages 
-       (conversation_id, discord_message_id, sender_id, sender_type, content, agent_name) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+       (conversation_id, discord_message_id, sender_id, sender_type, content, agent_name, bot_name) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING *`,
-      [conversationId, discordMessageId, senderId, senderType, content, agentName]
+      [conversationId, discordMessageId, senderId, senderType, content, botName, botName]
     );
 
     return result.rows[0];

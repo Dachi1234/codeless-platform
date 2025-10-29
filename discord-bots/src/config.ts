@@ -4,24 +4,27 @@ import { GatewayIntentBits, Partials } from 'discord.js';
 // Load environment variables
 dotenv.config();
 
-export interface BotConfig {
-  discord: {
-    token: string;
-    applicationId?: string;
-    intents: GatewayIntentBits[];
-    partials: Partials[];
-  };
+export interface SingleBotConfig {
+  name: string;
+  token: string;
+  n8nWebhookUrl: string;
+  clientId?: string;
+  maxContextMessages: number;
+  responseTimeout: number;
+  profileFields: string[];
+}
+
+export interface AppConfig {
+  bots: SingleBotConfig[];
   database: {
     url: string;
   };
-  n8n: {
-    webhookUrl: string;
-    authHeader?: string;
+  discord: {
+    intents: GatewayIntentBits[];
+    partials: Partials[];
   };
-  agent: {
-    name: string;
-    maxContextMessages: number;
-    responseTimeout: number;
+  n8n: {
+    authHeader?: string;
   };
   logging: {
     level: string;
@@ -37,10 +40,66 @@ function getEnvOrThrow(key: string): string {
   return value;
 }
 
-export const config: BotConfig = {
+function getEnvOrDefault(key: string, defaultValue: string): string {
+  return process.env[key] || defaultValue;
+}
+
+// Parse bot configurations from environment
+function parseBotsConfig(): SingleBotConfig[] {
+  const bots: SingleBotConfig[] = [];
+
+  // Laura (required - backward compatibility)
+  if (process.env.DISCORD_BOT_TOKEN || process.env.LAURA_BOT_TOKEN) {
+    bots.push({
+      name: 'laura',
+      token: process.env.LAURA_BOT_TOKEN || getEnvOrThrow('DISCORD_BOT_TOKEN'),
+      n8nWebhookUrl: process.env.LAURA_N8N_WEBHOOK_URL || getEnvOrThrow('N8N_WEBHOOK_URL'),
+      clientId: process.env.LAURA_CLIENT_ID,
+      maxContextMessages: parseInt(getEnvOrDefault('LAURA_MAX_CONTEXT_MESSAGES', '10'), 10),
+      responseTimeout: parseInt(getEnvOrDefault('LAURA_RESPONSE_TIMEOUT', '120000'), 10),
+      profileFields: ['tension_level', 'trust_level', 'current_project', 'deadline_mvp', 'notes', 'cohort', 'timezone'],
+    });
+  }
+
+  // Giorgi (optional)
+  if (process.env.GIORGI_BOT_TOKEN) {
+    bots.push({
+      name: 'giorgi',
+      token: getEnvOrThrow('GIORGI_BOT_TOKEN'),
+      n8nWebhookUrl: getEnvOrThrow('GIORGI_N8N_WEBHOOK_URL'),
+      clientId: process.env.GIORGI_CLIENT_ID,
+      maxContextMessages: parseInt(getEnvOrDefault('GIORGI_MAX_CONTEXT_MESSAGES', '10'), 10),
+      responseTimeout: parseInt(getEnvOrDefault('GIORGI_RESPONSE_TIMEOUT', '120000'), 10),
+      profileFields: ['tech_respect', 'code_quality', 'current_stack', 'blocker', 'notes', 'student_type'],
+    });
+  }
+
+  // Nino (optional - add when ready)
+  if (process.env.NINO_BOT_TOKEN) {
+    bots.push({
+      name: 'nino',
+      token: getEnvOrThrow('NINO_BOT_TOKEN'),
+      n8nWebhookUrl: getEnvOrThrow('NINO_N8N_WEBHOOK_URL'),
+      clientId: process.env.NINO_CLIENT_ID,
+      maxContextMessages: parseInt(getEnvOrDefault('NINO_MAX_CONTEXT_MESSAGES', '10'), 10),
+      responseTimeout: parseInt(getEnvOrDefault('NINO_RESPONSE_TIMEOUT', '120000'), 10),
+      profileFields: ['design_taste', 'ux_understanding', 'current_mockup', 'feedback_notes'],
+    });
+  }
+
+  if (bots.length === 0) {
+    throw new Error('No bots configured! At least one bot token is required.');
+  }
+
+  return bots;
+}
+
+export const config: AppConfig = {
+  bots: parseBotsConfig(),
+  database: {
+    url: getEnvOrThrow('DATABASE_URL'),
+  },
   discord: {
-    token: getEnvOrThrow('DISCORD_BOT_TOKEN'),
-    applicationId: process.env.DISCORD_APPLICATION_ID,
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMessages,
@@ -49,17 +108,8 @@ export const config: BotConfig = {
     ],
     partials: [Partials.Channel, Partials.Message],
   },
-  database: {
-    url: getEnvOrThrow('DATABASE_URL'),
-  },
   n8n: {
-    webhookUrl: getEnvOrThrow('N8N_WEBHOOK_URL'),
     authHeader: process.env.N8N_WEBHOOK_AUTH_HEADER,
-  },
-  agent: {
-    name: process.env.AGENT_NAME || 'laura',
-    maxContextMessages: parseInt(process.env.MAX_CONTEXT_MESSAGES || '10', 10),
-    responseTimeout: parseInt(process.env.AGENT_RESPONSE_TIMEOUT || '60000', 10),
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
