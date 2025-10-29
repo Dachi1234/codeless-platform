@@ -172,7 +172,7 @@ export class DiscordBot {
         // Update student profile if bot provided updates
         if (profileUpdates) {
           console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
-          await this.db.updateStudentProfile(message.author.id, profileUpdates);
+          await this.db.updateStudentProfile(message.author.id, profileUpdates, this.botName);
         }
       } catch (dbError) {
         console.warn('⚠️ Could not save bot response or profile updates to database');

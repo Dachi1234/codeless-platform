@@ -206,7 +206,14 @@ export class DatabaseService {
       cohort?: string;
       timezone?: string;
       deadline_mvp?: string;
-    }
+      // Giorgi's additional fields
+      tech_respect?: number;
+      code_quality?: number;
+      current_stack?: string;
+      blocker?: string;
+      student_type?: string;
+    },
+    botName: string = 'laura'
   ): Promise<void> {
     const client = await this.pool.connect();
     try {
@@ -214,13 +221,16 @@ export class DatabaseService {
       const values: any[] = [discordUserId];
       let paramIndex = 2;
 
+      // Map tension/trust to bot-specific columns
       if (updates.tension_level !== undefined) {
-        setParts.push(`tension_level = $${paramIndex++}`);
+        const tensionField = `${botName}_tension_level`;
+        setParts.push(`${tensionField} = $${paramIndex++}`);
         values.push(updates.tension_level);
       }
 
       if (updates.trust_level !== undefined) {
-        setParts.push(`trust_level = $${paramIndex++}`);
+        const trustField = `${botName}_trust_level`;
+        setParts.push(`${trustField} = $${paramIndex++}`);
         values.push(updates.trust_level);
       }
 
@@ -252,6 +262,32 @@ export class DatabaseService {
       if (updates.deadline_mvp !== undefined) {
         setParts.push(`deadline_mvp = $${paramIndex++}`);
         values.push(updates.deadline_mvp);
+      }
+
+      // Giorgi's additional fields
+      if (updates.tech_respect !== undefined) {
+        setParts.push(`tech_respect = $${paramIndex++}`);
+        values.push(updates.tech_respect);
+      }
+
+      if (updates.code_quality !== undefined) {
+        setParts.push(`code_quality = $${paramIndex++}`);
+        values.push(updates.code_quality);
+      }
+
+      if (updates.current_stack !== undefined) {
+        setParts.push(`current_stack = $${paramIndex++}`);
+        values.push(updates.current_stack);
+      }
+
+      if (updates.blocker !== undefined) {
+        setParts.push(`blocker = $${paramIndex++}`);
+        values.push(updates.blocker);
+      }
+
+      if (updates.student_type !== undefined) {
+        setParts.push(`student_type = $${paramIndex++}`);
+        values.push(updates.student_type);
       }
 
       if (setParts.length === 0) {
