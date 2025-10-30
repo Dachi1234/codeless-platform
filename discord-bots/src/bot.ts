@@ -100,6 +100,7 @@ export class DiscordBot {
 
       // Try to use database, but continue without it if it fails
       let conversationHistory: any[] = [];
+      let agentProfile: any = null;
       
       try {
         // Get or create conversation
@@ -121,12 +122,19 @@ export class DiscordBot {
           this.botName
         );
 
-        // Update student profile
+        // Update student profile (shared data)
         await this.db.getOrCreateStudentProfile(
           message.author.id,
           message.author.username,
           message.author.displayName || null
         );
+
+        // Get agent-specific profile
+        if (this.botName === 'laura') {
+          agentProfile = await this.db.getOrCreateLauraProfile(message.author.id);
+        } else if (this.botName === 'giorgi') {
+          agentProfile = await this.db.getOrCreateGiorgiProfile(message.author.id);
+        }
 
         // Get conversation history
         conversationHistory = await this.db.getRecentMessages(
@@ -136,6 +144,7 @@ export class DiscordBot {
       } catch (dbError) {
         console.warn('⚠️ Database unavailable, continuing without conversation history:', dbError);
         conversationHistory = [];
+        agentProfile = null;
       }
 
       // Send to n8n and get agent response
@@ -144,7 +153,8 @@ export class DiscordBot {
         message.author.id,
         message.author.username,
         message.content,
-        conversationHistory
+        conversationHistory,
+        agentProfile
       );
 
       // Send response back to Discord

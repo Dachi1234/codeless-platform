@@ -13,6 +13,7 @@ export interface N8nRequest {
     content: string;
     timestamp: string;
   }[];
+  studentProfile?: any; // Agent-specific profile data
 }
 
 export interface N8nResponse {
@@ -52,7 +53,8 @@ export class N8nService {
     userId: string,
     username: string,
     message: string,
-    conversationHistory: Message[]
+    conversationHistory: Message[],
+    studentProfile?: any
   ): Promise<{ response: string; profileUpdates?: N8nResponse['profile_updates'] }> {
     try {
       // Build conversation context from history
@@ -72,12 +74,14 @@ export class N8nService {
         username,
         message,
         conversationContext,
+        studentProfile, // Include agent-specific profile
       };
 
       console.log(`📤 Sending to n8n:`, {
         user: username,
         messageLength: message.length,
         contextMessages: conversationContext.length,
+        hasProfile: !!studentProfile,
       });
 
       // Send to n8n webhook

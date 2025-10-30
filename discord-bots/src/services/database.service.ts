@@ -31,6 +31,34 @@ export interface StudentProfile {
   messageCount: number;
 }
 
+export interface LauraProfile {
+  discordUserId: string;
+  tensionLevel: number;
+  trustLevel: number;
+  messageCount: number;
+  lastMilestone: string | null;
+  blocked: boolean;
+  priority: string | null;
+  lastInteraction: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GiorgiProfile {
+  discordUserId: string;
+  tensionLevel: number;
+  trustLevel: number;
+  messageCount: number;
+  techRespect: number;
+  codeQuality: number;
+  currentStack: string | null;
+  blocker: string | null;
+  studentType: string | null;
+  lastInteraction: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class DatabaseService {
   private pool: Pool;
 
@@ -193,27 +221,79 @@ export class DatabaseService {
   }
 
   /**
-   * Update student profile with data from Laura
+   * Get or create Laura's profile for a student
    */
-  async updateStudentProfile(
+  async getOrCreateLauraProfile(discordUserId: string): Promise<LauraProfile> {
+    const client = await this.pool.connect();
+    try {
+      // Try to get existing profile
+      const existingResult = await client.query<LauraProfile>(
+        'SELECT * FROM discord_bots.laura_profiles WHERE discord_user_id = $1',
+        [discordUserId]
+      );
+
+      if (existingResult.rows.length > 0) {
+        return existingResult.rows[0];
+      }
+
+      // Create new profile with defaults
+      const insertResult = await client.query<LauraProfile>(
+        `INSERT INTO discord_bots.laura_profiles 
+         (discord_user_id, tension_level, trust_level, message_count) 
+         VALUES ($1, 5, 5, 0) 
+         RETURNING *`,
+        [discordUserId]
+      );
+
+      return insertResult.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get or create Giorgi's profile for a student
+   */
+  async getOrCreateGiorgiProfile(discordUserId: string): Promise<GiorgiProfile> {
+    const client = await this.pool.connect();
+    try {
+      // Try to get existing profile
+      const existingResult = await client.query<GiorgiProfile>(
+        'SELECT * FROM discord_bots.giorgi_profiles WHERE discord_user_id = $1',
+        [discordUserId]
+      );
+
+      if (existingResult.rows.length > 0) {
+        return existingResult.rows[0];
+      }
+
+      // Create new profile with defaults
+      const insertResult = await client.query<GiorgiProfile>(
+        `INSERT INTO discord_bots.giorgi_profiles 
+         (discord_user_id, tension_level, trust_level, message_count, tech_respect, code_quality) 
+         VALUES ($1, 5, 5, 0, 5, 5) 
+         RETURNING *`,
+        [discordUserId]
+      );
+
+      return insertResult.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update Laura's profile
+   */
+  async updateLauraProfile(
     discordUserId: string,
     updates: {
       tension_level?: number;
       trust_level?: number;
-      notes?: string;
-      current_project?: string;
-      name?: string;
-      cohort?: string;
-      timezone?: string;
-      deadline_mvp?: string;
-      // Giorgi's additional fields
-      tech_respect?: number;
-      code_quality?: number;
-      current_stack?: string;
-      blocker?: string;
-      student_type?: string;
-    },
-    botName: string = 'laura'
+      last_milestone?: string;
+      blocked?: boolean;
+      priority?: string;
+    }
   ): Promise<void> {
     const client = await this.pool.connect();
     try {
@@ -221,50 +301,82 @@ export class DatabaseService {
       const values: any[] = [discordUserId];
       let paramIndex = 2;
 
-      // Map tension/trust to bot-specific columns
       if (updates.tension_level !== undefined) {
-        const tensionField = `${botName}_tension_level`;
-        setParts.push(`${tensionField} = $${paramIndex++}`);
+        setParts.push(`tension_level = $${paramIndex++}`);
         values.push(updates.tension_level);
       }
 
       if (updates.trust_level !== undefined) {
-        const trustField = `${botName}_trust_level`;
-        setParts.push(`${trustField} = $${paramIndex++}`);
+        setParts.push(`trust_level = $${paramIndex++}`);
         values.push(updates.trust_level);
       }
 
-      if (updates.notes !== undefined) {
-        setParts.push(`notes = $${paramIndex++}`);
-        values.push(updates.notes);
+      if (updates.last_milestone !== undefined) {
+        setParts.push(`last_milestone = $${paramIndex++}`);
+        values.push(updates.last_milestone);
       }
 
-      if (updates.current_project !== undefined) {
-        setParts.push(`current_project = $${paramIndex++}`);
-        values.push(updates.current_project);
+      if (updates.blocked !== undefined) {
+        setParts.push(`blocked = $${paramIndex++}`);
+        values.push(updates.blocked);
       }
 
-      if (updates.name !== undefined) {
-        setParts.push(`name = $${paramIndex++}`);
-        values.push(updates.name);
+      if (updates.priority !== undefined) {
+        setParts.push(`priority = $${paramIndex++}`);
+        values.push(updates.priority);
       }
 
-      if (updates.cohort !== undefined) {
-        setParts.push(`cohort = $${paramIndex++}`);
-        values.push(updates.cohort);
+      if (setParts.length === 0) {
+        return; // Nothing to update
       }
 
-      if (updates.timezone !== undefined) {
-        setParts.push(`timezone = $${paramIndex++}`);
-        values.push(updates.timezone);
+      setParts.push('message_count = message_count + 1');
+      setParts.push('last_interaction = NOW()');
+
+      await client.query(
+        `UPDATE discord_bots.laura_profiles 
+         SET ${setParts.join(', ')}
+         WHERE discord_user_id = $1`,
+        values
+      );
+
+      console.log(`✅ Updated Laura profile for ${discordUserId}:`, updates);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update Giorgi's profile
+   */
+  async updateGiorgiProfile(
+    discordUserId: string,
+    updates: {
+      tension_level?: number;
+      trust_level?: number;
+      tech_respect?: number;
+      code_quality?: number;
+      current_stack?: string;
+      blocker?: string;
+      student_type?: string;
+    }
+  ): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      const setParts: string[] = [];
+      const values: any[] = [discordUserId];
+      let paramIndex = 2;
+
+      if (updates.tension_level !== undefined) {
+        setParts.push(`tension_level = $${paramIndex++}`);
+        values.push(updates.tension_level);
       }
 
-      if (updates.deadline_mvp !== undefined) {
-        setParts.push(`deadline_mvp = $${paramIndex++}`);
-        values.push(updates.deadline_mvp);
+      if (updates.trust_level !== undefined) {
+        setParts.push(`trust_level = $${paramIndex++}`);
+        values.push(updates.trust_level);
       }
 
-      // Giorgi's additional fields
       if (updates.tech_respect !== undefined) {
         setParts.push(`tech_respect = $${paramIndex++}`);
         values.push(updates.tech_respect);
@@ -294,16 +406,124 @@ export class DatabaseService {
         return; // Nothing to update
       }
 
+      setParts.push('message_count = message_count + 1');
+      setParts.push('last_interaction = NOW()');
+
       await client.query(
-        `UPDATE discord_bots.student_profiles 
-         SET ${setParts.join(', ')}, last_seen_at = NOW()
+        `UPDATE discord_bots.giorgi_profiles 
+         SET ${setParts.join(', ')}
          WHERE discord_user_id = $1`,
         values
       );
 
-      console.log(`✅ Updated student profile for ${discordUserId}:`, updates);
+      console.log(`✅ Updated Giorgi profile for ${discordUserId}:`, updates);
     } finally {
       client.release();
+    }
+  }
+
+  /**
+   * Update shared student profile fields (current_project, name, cohort, etc.)
+   */
+  async updateSharedStudentProfile(
+    discordUserId: string,
+    updates: {
+      name?: string;
+      cohort?: string;
+      timezone?: string;
+      current_project?: string;
+      notes?: string;
+      deadline_mvp?: string;
+    }
+  ): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      const setParts: string[] = [];
+      const values: any[] = [discordUserId];
+      let paramIndex = 2;
+
+      if (updates.name !== undefined) {
+        setParts.push(`name = $${paramIndex++}`);
+        values.push(updates.name);
+      }
+
+      if (updates.cohort !== undefined) {
+        setParts.push(`cohort = $${paramIndex++}`);
+        values.push(updates.cohort);
+      }
+
+      if (updates.timezone !== undefined) {
+        setParts.push(`timezone = $${paramIndex++}`);
+        values.push(updates.timezone);
+      }
+
+      if (updates.current_project !== undefined) {
+        setParts.push(`current_project = $${paramIndex++}`);
+        values.push(updates.current_project);
+      }
+
+      if (updates.notes !== undefined) {
+        setParts.push(`notes = $${paramIndex++}`);
+        values.push(updates.notes);
+      }
+
+      if (updates.deadline_mvp !== undefined) {
+        setParts.push(`deadline_mvp = $${paramIndex++}`);
+        values.push(updates.deadline_mvp);
+      }
+
+      if (setParts.length === 0) {
+        return; // Nothing to update
+      }
+
+      setParts.push('last_seen_at = NOW()');
+
+      await client.query(
+        `UPDATE discord_bots.student_profiles 
+         SET ${setParts.join(', ')}
+         WHERE discord_user_id = $1`,
+        values
+      );
+
+      console.log(`✅ Updated shared student profile for ${discordUserId}:`, updates);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Generic method to route updates to the correct agent profile
+   */
+  async updateStudentProfile(
+    discordUserId: string,
+    updates: any,
+    botName: string = 'laura'
+  ): Promise<void> {
+    // Update shared fields if present (current_project, name, cohort, etc.)
+    const sharedFields = ['name', 'cohort', 'timezone', 'current_project', 'notes', 'deadline_mvp'];
+    const sharedUpdates: any = {};
+    let hasSharedUpdates = false;
+
+    for (const field of sharedFields) {
+      if (updates[field] !== undefined) {
+        sharedUpdates[field] = updates[field];
+        hasSharedUpdates = true;
+      }
+    }
+
+    if (hasSharedUpdates) {
+      await this.updateSharedStudentProfile(discordUserId, sharedUpdates);
+    }
+
+    // Update agent-specific fields
+    if (botName === 'laura') {
+      await this.getOrCreateLauraProfile(discordUserId);
+      await this.updateLauraProfile(discordUserId, updates);
+    } else if (botName === 'giorgi') {
+      await this.getOrCreateGiorgiProfile(discordUserId);
+      await this.updateGiorgiProfile(discordUserId, updates);
+    } else {
+      console.warn(`⚠️ Unknown bot name: ${botName}`);
     }
   }
 
