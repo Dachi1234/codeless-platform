@@ -1,6 +1,7 @@
 import { DiscordBot } from './bot';
 import { config } from './config';
 import http from 'http';
+import { ChannelType } from 'discord.js';
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (error) => {
@@ -25,9 +26,12 @@ async function main() {
     return new DiscordBot(botConfig);
   });
 
-  // Create HTTP health check server for Cloud Run
+  // Create HTTP server for health checks AND webhook callbacks
   const PORT = process.env.PORT || 8080;
-  const server = http.createServer((req, res) => {
+  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'change-me-in-production';
+  
+  const server = http.createServer(async (req, res) => {
+    // Health check endpoint
     if (req.url === '/health' || req.url === '/') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
@@ -35,10 +39,71 @@ async function main() {
         bots: config.bots.map(b => b.name),
         timestamp: new Date().toISOString()
       }));
-    } else {
-      res.writeHead(404);
-      res.end('Not found');
+      return;
     }
+
+    // Webhook callback endpoint from n8n
+    if (req.url === '/webhook/agent-response' && req.method === 'POST') {
+      let body = '';
+      
+      req.on('data', chunk => {
+        body += chunk.toString();
+      });
+
+      req.on('end', async () => {
+        try {
+          const data = JSON.parse(body);
+          
+          // Verify webhook secret for security
+          const authHeader = req.headers['authorization'];
+          if (authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
+            console.warn('⚠️ Webhook received with invalid secret');
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unauthorized' }));
+            return;
+          }
+
+          console.log('📨 Received webhook callback from n8n:', {
+            agentName: data.agentName,
+            channelId: data.channelId,
+            userId: data.userId,
+            hasResponse: !!data.response
+          });
+
+          // Find the bot that should handle this response
+          const bot = bots.find(b => b.botName === data.agentName);
+          if (!bot) {
+            console.error(`❌ No bot found for agent: ${data.agentName}`);
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Bot not found' }));
+            return;
+          }
+
+          // Handle the async response
+          await bot.handleAsyncResponse(data);
+
+          // Respond to n8n
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true }));
+        } catch (error) {
+          console.error('❌ Error processing webhook:', error);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Internal server error' }));
+        }
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ Error reading webhook request:', error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Bad request' }));
+      });
+
+      return;
+    }
+
+    // 404 for all other routes
+    res.writeHead(404);
+    res.end('Not found');
   });
 
   server.listen(PORT, () => {

@@ -8,7 +8,7 @@ export class DiscordBot {
   private db: DatabaseService;
   private n8n: N8nService;
   private botConfig: SingleBotConfig;
-  private botName: string;
+  public botName: string; // Public so index.ts can access it
 
   constructor(botConfig: SingleBotConfig) {
     this.botConfig = botConfig;
@@ -147,8 +147,8 @@ export class DiscordBot {
         agentProfile = null;
       }
 
-      // Send to n8n and get agent response
-      const { response: agentResponse, profileUpdates } = await this.n8n.sendToAgent(
+      // Send to n8n - supports both sync and async patterns
+      const n8nResponse = await this.n8n.sendToAgent(
         message.channel.id,
         message.author.id,
         message.author.username,
@@ -157,38 +157,58 @@ export class DiscordBot {
         agentProfile
       );
 
-      // Send response back to Discord
-      const botMessage = await message.reply(agentResponse);
-
-      // Try to save agent message and profile updates (if database is available)
-      try {
-        const conversation = await this.db.getOrCreateConversation(
-          message.channel.id,
-          channelType,
-          guildId,
-          channelName,
-          this.botName
-        );
-        
-        await this.db.saveMessage(
-          conversation.id,
-          botMessage.id,
-          this.client.user?.id || 'bot',
-          'agent',
-          agentResponse,
-          this.botName
-        );
-
-        // Update student profile if bot provided updates
-        if (profileUpdates) {
-          console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
-          await this.db.updateStudentProfile(message.author.id, profileUpdates, this.botName);
+      // Check which pattern n8n used
+      if (n8nResponse.acknowledged) {
+        // ⏳ Async pattern: n8n is processing, will send callback later
+        try {
+          await message.react('⏳');
+          console.log(`⏳ Async processing started for message from ${message.author.username}`);
+          console.log(`   Response will be sent via webhook callback when ready`);
+        } catch (reactionError) {
+          console.warn('⚠️ Could not add loading reaction:', reactionError);
         }
-      } catch (dbError) {
-        console.warn('⚠️ Could not save bot response or profile updates to database');
-      }
+        // The actual response will come via webhook callback (see handleAsyncResponse method)
+        
+      } else if (n8nResponse.response) {
+        // ✅ Sync pattern: n8n responded immediately, send it now
+        console.log(`✅ Sync response received, sending to Discord`);
+        
+        const botMessage = await message.reply(n8nResponse.response);
 
-      console.log(`✅ Response sent successfully`);
+        // Try to save agent message and profile updates (if database is available)
+        try {
+          const conversation = await this.db.getOrCreateConversation(
+            message.channel.id,
+            channelType,
+            guildId,
+            channelName,
+            this.botName
+          );
+          
+          await this.db.saveMessage(
+            conversation.id,
+            botMessage.id,
+            this.client.user?.id || 'bot',
+            'agent',
+            n8nResponse.response,
+            this.botName
+          );
+
+          // Update student profile if bot provided updates
+          if (n8nResponse.profile_updates) {
+            console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
+            await this.db.updateStudentProfile(message.author.id, n8nResponse.profile_updates, this.botName);
+          }
+        } catch (dbError) {
+          console.warn('⚠️ Could not save bot response or profile updates to database');
+        }
+
+        console.log(`✅ Sync response sent successfully`);
+      } else {
+        // This shouldn't happen - n8n returned neither sync nor async response
+        console.error('❌ Invalid n8n response: missing both "response" and "acknowledged"');
+        await message.reply("Sorry, I got an unexpected response format. Please try again! 😔");
+      }
     } catch (error) {
       console.error('❌ Error handling message:', error);
 
@@ -220,6 +240,115 @@ export class DiscordBot {
     } catch (error) {
       console.error(`❌ Failed to start bot (${this.botName}):`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Handle async response from n8n webhook callback
+   */
+  async handleAsyncResponse(data: {
+    channelId: string;
+    userId: string;
+    username: string;
+    displayName?: string;
+    agentName: string;
+    response: string;
+    profileUpdates?: any;
+    webUrl?: string;
+    deploymentId?: string;
+  }): Promise<void> {
+    try {
+      console.log(`📨 Processing async response for ${data.agentName} in channel ${data.channelId}`);
+
+      // Get the Discord channel
+      const channel = await this.client.channels.fetch(data.channelId);
+      
+      if (!channel) {
+        console.error(`❌ Channel not found: ${data.channelId}`);
+        return;
+      }
+
+      if (!channel.isTextBased()) {
+        console.error(`❌ Channel is not text-based: ${data.channelId}`);
+        return;
+      }
+
+      // Format the response message
+      let responseText = data.response;
+      
+      // Add deployment link if present
+      if (data.webUrl) {
+        responseText += `\n\n🔗 **Deployment:** ${data.webUrl}`;
+      }
+
+      // Send the message to Discord (check if channel supports sending)
+      if (!('send' in channel)) {
+        console.error(`❌ Channel does not support sending messages: ${data.channelId}`);
+        return;
+      }
+      
+      const botMessage = await channel.send(responseText);
+
+      console.log(`✅ Async response sent to Discord channel ${data.channelId}`);
+
+      // Save to database
+      try {
+        // Determine channel type
+        let channelType: 'dm' | 'text' | 'thread' = 'text';
+        let guildId: string | null = null;
+        let channelName: string | null = null;
+
+        if (channel.type === ChannelType.DM) {
+          channelType = 'dm';
+        } else if (channel.type === ChannelType.PublicThread || channel.type === ChannelType.PrivateThread) {
+          channelType = 'thread';
+          if ('guild' in channel && channel.guild) {
+            guildId = channel.guild.id;
+          }
+          if ('name' in channel) {
+            channelName = channel.name || null;
+          }
+        } else {
+          channelType = 'text';
+          if ('guild' in channel && channel.guild) {
+            guildId = channel.guild.id;
+          }
+          if ('name' in channel) {
+            channelName = channel.name || null;
+          }
+        }
+
+        // Get or create conversation
+        const conversation = await this.db.getOrCreateConversation(
+          data.channelId,
+          channelType,
+          guildId,
+          channelName,
+          this.botName
+        );
+
+        // Save bot message
+        await this.db.saveMessage(
+          conversation.id,
+          botMessage.id,
+          this.client.user?.id || 'bot',
+          'agent',
+          responseText,
+          this.botName
+        );
+
+        // Update student profile if updates provided
+        if (data.profileUpdates) {
+          console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
+          await this.db.updateStudentProfile(data.userId, data.profileUpdates, this.botName);
+        }
+
+        console.log(`✅ Async response saved to database`);
+      } catch (dbError) {
+        console.warn('⚠️ Could not save async response to database:', dbError);
+      }
+    } catch (error) {
+      console.error('❌ Error handling async response:', error);
     }
   }
 

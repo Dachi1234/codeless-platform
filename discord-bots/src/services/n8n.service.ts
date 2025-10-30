@@ -17,7 +17,8 @@ export interface N8nRequest {
 }
 
 export interface N8nResponse {
-  response: string;
+  // Sync pattern: n8n responds immediately with the answer
+  response?: string;
   profile_updates?: {
     tension_level?: number;
     trust_level?: number;
@@ -32,6 +33,10 @@ export interface N8nResponse {
     tokens?: number;
     processingTime?: number;
   };
+  
+  // Async pattern: n8n acknowledges and will callback later
+  acknowledged?: boolean;
+  status?: string;
 }
 
 export class N8nService {
@@ -46,7 +51,12 @@ export class N8nService {
   }
 
   /**
-   * Send a message to n8n webhook and get agent response
+   * Send a message to n8n webhook
+   * Supports BOTH sync and async patterns - n8n decides which to use
+   * 
+   * Sync: n8n responds with {"response": "...", "profile_updates": {...}}
+   * Async: n8n responds with {"acknowledged": true, "status": "processing"}
+   *        (then sends callback to /webhook/agent-response later)
    */
   async sendToAgent(
     channelId: string,
@@ -55,7 +65,7 @@ export class N8nService {
     message: string,
     conversationHistory: Message[],
     studentProfile?: any
-  ): Promise<{ response: string; profileUpdates?: N8nResponse['profile_updates'] }> {
+  ): Promise<N8nResponse> {
     try {
       // Build conversation context from history
       const conversationContext = conversationHistory
@@ -102,23 +112,36 @@ export class N8nService {
         }
       );
 
-      console.log(`📥 Received from n8n:`, {
-        responseLength: response.data.response?.length || 0,
-        hasProfileUpdates: !!response.data.profile_updates,
-        metadata: response.data.metadata,
-      });
+      // Check which pattern n8n used
+      if (response.data.acknowledged) {
+        // Async pattern: n8n acknowledged, will send callback later
+        console.log(`📥 Received acknowledgment from n8n:`, {
+          status: response.data.status || 'processing',
+          pattern: 'async'
+        });
+        
+        return {
+          acknowledged: true,
+          status: response.data.status || 'processing',
+        };
+      } else if (response.data.response) {
+        // Sync pattern: n8n responded immediately
+        console.log(`📥 Received response from n8n:`, {
+          responseLength: response.data.response.length,
+          hasProfileUpdates: !!response.data.profile_updates,
+          metadata: response.data.metadata,
+          pattern: 'sync'
+        });
 
-      // Extract response text
-      const agentResponse = response.data.response;
-
-      if (!agentResponse) {
-        throw new Error('n8n response missing "response" field');
+        return {
+          response: response.data.response,
+          profile_updates: response.data.profile_updates,
+          metadata: response.data.metadata,
+        };
+      } else {
+        // Invalid response - neither sync nor async
+        throw new Error('n8n response missing both "response" and "acknowledged" fields');
       }
-
-      return {
-        response: agentResponse,
-        profileUpdates: response.data.profile_updates,
-      };
     } catch (error) {
       console.error('❌ n8n webhook error:', error);
 
