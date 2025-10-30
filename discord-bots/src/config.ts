@@ -56,7 +56,7 @@ function parseBotsConfig(): SingleBotConfig[] {
       n8nWebhookUrl: process.env.LAURA_N8N_WEBHOOK_URL || getEnvOrThrow('N8N_WEBHOOK_URL'),
       clientId: process.env.LAURA_CLIENT_ID,
       maxContextMessages: parseInt(getEnvOrDefault('LAURA_MAX_CONTEXT_MESSAGES', '10'), 10),
-      responseTimeout: parseInt(getEnvOrDefault('LAURA_RESPONSE_TIMEOUT', '120000'), 10),
+      responseTimeout: parseInt(getEnvOrDefault('LAURA_RESPONSE_TIMEOUT', '600000'), 10), // 10 minutes
       profileFields: ['tension_level', 'trust_level', 'current_project', 'deadline_mvp', 'notes', 'cohort', 'timezone'],
     });
   }
@@ -69,7 +69,7 @@ function parseBotsConfig(): SingleBotConfig[] {
       n8nWebhookUrl: getEnvOrThrow('GIORGI_N8N_WEBHOOK_URL'),
       clientId: process.env.GIORGI_CLIENT_ID,
       maxContextMessages: parseInt(getEnvOrDefault('GIORGI_MAX_CONTEXT_MESSAGES', '10'), 10),
-      responseTimeout: parseInt(getEnvOrDefault('GIORGI_RESPONSE_TIMEOUT', '120000'), 10),
+      responseTimeout: parseInt(getEnvOrDefault('GIORGI_RESPONSE_TIMEOUT', '600000'), 10), // 10 minutes
       profileFields: ['tech_respect', 'code_quality', 'current_stack', 'blocker', 'notes', 'student_type'],
     });
   }
@@ -82,7 +82,7 @@ function parseBotsConfig(): SingleBotConfig[] {
       n8nWebhookUrl: getEnvOrThrow('NINO_N8N_WEBHOOK_URL'),
       clientId: process.env.NINO_CLIENT_ID,
       maxContextMessages: parseInt(getEnvOrDefault('NINO_MAX_CONTEXT_MESSAGES', '10'), 10),
-      responseTimeout: parseInt(getEnvOrDefault('NINO_RESPONSE_TIMEOUT', '120000'), 10),
+      responseTimeout: parseInt(getEnvOrDefault('NINO_RESPONSE_TIMEOUT', '600000'), 10), // 10 minutes
       profileFields: ['design_taste', 'ux_understanding', 'current_mockup', 'feedback_notes'],
     });
   }
