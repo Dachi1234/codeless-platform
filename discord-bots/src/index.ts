@@ -56,7 +56,19 @@ async function main() {
           
           // Verify webhook secret for security
           const authHeader = req.headers['authorization'];
-          if (authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
+          const expectedHeader = `Bearer ${WEBHOOK_SECRET}`;
+          
+          // Debug logging
+          console.log('🔍 Auth Debug:', {
+            received: authHeader,
+            receivedLength: authHeader?.length,
+            expected: expectedHeader,
+            expectedLength: expectedHeader.length,
+            secretLength: WEBHOOK_SECRET.length,
+            match: authHeader === expectedHeader
+          });
+          
+          if (authHeader !== expectedHeader) {
             console.warn('⚠️ Webhook received with invalid secret');
             res.writeHead(401, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ error: 'Unauthorized' }));
