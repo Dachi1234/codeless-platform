@@ -28,7 +28,8 @@ async function main() {
 
   // Create HTTP server for health checks AND webhook callbacks
   const PORT = process.env.PORT || 8080;
-  const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'change-me-in-production';
+  // Strip BOM character if present (from PowerShell script that created the secret)
+  const WEBHOOK_SECRET = (process.env.WEBHOOK_SECRET || 'change-me-in-production').replace(/^\uFEFF/, '');
   
   const server = http.createServer(async (req, res) => {
     // Health check endpoint
