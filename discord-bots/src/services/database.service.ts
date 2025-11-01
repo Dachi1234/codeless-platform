@@ -26,6 +26,14 @@ export interface StudentProfile {
   discordUserId: string;
   username: string;
   displayName: string | null;
+  name: string | null;
+  cohort: string | null;
+  timezone: string | null;
+  currentProject: string | null;
+  projectDescription: string | null;
+  projectStatus: string | null;
+  adminNotes: string | null;
+  deadlineMvp: Date | null;
   firstSeenAt: Date;
   lastSeenAt: Date;
   messageCount: number;
@@ -39,6 +47,7 @@ export interface LauraProfile {
   lastMilestone: string | null;
   blocked: boolean;
   priority: string | null;
+  notes: string | null;
   lastInteraction: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -54,9 +63,28 @@ export interface GiorgiProfile {
   currentStack: string | null;
   blocker: string | null;
   studentType: string | null;
+  notes: string | null;
+  vercelProjectId: string | null;
+  vercelChatId: string | null;
+  latestDeploymentUrl: string | null;
+  deploymentStatus: string | null;
   lastInteraction: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Deployment {
+  id: number;
+  discordUserId: string;
+  featureDescription: string | null;
+  userPrompt: string | null;
+  deploymentId: string | null;
+  deploymentUrl: string;
+  vercelChatId: string | null;
+  status: 'success' | 'failed';
+  errorMessage: string | null;
+  buildTimeSeconds: number | null;
+  createdAt: Date;
 }
 
 export class DatabaseService {
@@ -293,6 +321,7 @@ export class DatabaseService {
       last_milestone?: string;
       blocked?: boolean;
       priority?: string;
+      notes?: string;
     }
   ): Promise<void> {
     const client = await this.pool.connect();
@@ -324,6 +353,11 @@ export class DatabaseService {
       if (updates.priority !== undefined) {
         setParts.push(`priority = $${paramIndex++}`);
         values.push(updates.priority);
+      }
+
+      if (updates.notes !== undefined) {
+        setParts.push(`notes = $${paramIndex++}`);
+        values.push(updates.notes);
       }
 
       if (setParts.length === 0) {
@@ -359,6 +393,11 @@ export class DatabaseService {
       current_stack?: string;
       blocker?: string;
       student_type?: string;
+      notes?: string;
+      vercel_project_id?: string;
+      vercel_chat_id?: string;
+      latest_deployment_url?: string;
+      deployment_status?: string;
     }
   ): Promise<void> {
     const client = await this.pool.connect();
@@ -402,6 +441,31 @@ export class DatabaseService {
         values.push(updates.student_type);
       }
 
+      if (updates.notes !== undefined) {
+        setParts.push(`notes = $${paramIndex++}`);
+        values.push(updates.notes);
+      }
+
+      if (updates.vercel_project_id !== undefined) {
+        setParts.push(`vercel_project_id = $${paramIndex++}`);
+        values.push(updates.vercel_project_id);
+      }
+
+      if (updates.vercel_chat_id !== undefined) {
+        setParts.push(`vercel_chat_id = $${paramIndex++}`);
+        values.push(updates.vercel_chat_id);
+      }
+
+      if (updates.latest_deployment_url !== undefined) {
+        setParts.push(`latest_deployment_url = $${paramIndex++}`);
+        values.push(updates.latest_deployment_url);
+      }
+
+      if (updates.deployment_status !== undefined) {
+        setParts.push(`deployment_status = $${paramIndex++}`);
+        values.push(updates.deployment_status);
+      }
+
       if (setParts.length === 0) {
         return; // Nothing to update
       }
@@ -432,7 +496,9 @@ export class DatabaseService {
       cohort?: string;
       timezone?: string;
       current_project?: string;
-      notes?: string;
+      project_description?: string;
+      project_status?: string;
+      admin_notes?: string;
       deadline_mvp?: string;
     }
   ): Promise<void> {
@@ -462,9 +528,19 @@ export class DatabaseService {
         values.push(updates.current_project);
       }
 
-      if (updates.notes !== undefined) {
-        setParts.push(`notes = $${paramIndex++}`);
-        values.push(updates.notes);
+      if (updates.project_description !== undefined) {
+        setParts.push(`project_description = $${paramIndex++}`);
+        values.push(updates.project_description);
+      }
+
+      if (updates.project_status !== undefined) {
+        setParts.push(`project_status = $${paramIndex++}`);
+        values.push(updates.project_status);
+      }
+
+      if (updates.admin_notes !== undefined) {
+        setParts.push(`admin_notes = $${paramIndex++}`);
+        values.push(updates.admin_notes);
       }
 
       if (updates.deadline_mvp !== undefined) {
@@ -500,7 +576,7 @@ export class DatabaseService {
     botName: string = 'laura'
   ): Promise<void> {
     // Update shared fields if present (current_project, name, cohort, etc.)
-    const sharedFields = ['name', 'cohort', 'timezone', 'current_project', 'notes', 'deadline_mvp'];
+    const sharedFields = ['name', 'cohort', 'timezone', 'current_project', 'project_description', 'project_status', 'admin_notes', 'deadline_mvp'];
     const sharedUpdates: any = {};
     let hasSharedUpdates = false;
 
@@ -525,6 +601,121 @@ export class DatabaseService {
     } else {
       console.warn(`⚠️ Unknown bot name: ${botName}`);
     }
+  }
+
+  /**
+   * Save a deployment record
+   */
+  async saveDeployment(
+    discordUserId: string,
+    deploymentUrl: string,
+    options: {
+      featureDescription?: string;
+      userPrompt?: string;
+      deploymentId?: string;
+      vercelChatId?: string;
+      status: 'success' | 'failed';
+      errorMessage?: string;
+      buildTimeSeconds?: number;
+    }
+  ): Promise<Deployment> {
+    const result = await this.pool.query<Deployment>(
+      `INSERT INTO discord_bots.deployments 
+       (discord_user_id, feature_description, user_prompt, deployment_id, deployment_url, vercel_chat_id, status, error_message, build_time_seconds) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+       RETURNING *`,
+      [
+        discordUserId,
+        options.featureDescription || null,
+        options.userPrompt || null,
+        options.deploymentId || null,
+        deploymentUrl,
+        options.vercelChatId || null,
+        options.status,
+        options.errorMessage || null,
+        options.buildTimeSeconds || null,
+      ]
+    );
+
+    console.log(`✅ Saved deployment for ${discordUserId}: ${options.status}`);
+    return result.rows[0];
+  }
+
+  /**
+   * Get deployment history for a student
+   */
+  async getDeploymentHistory(
+    discordUserId: string,
+    limit: number = 10
+  ): Promise<Deployment[]> {
+    const result = await this.pool.query<Deployment>(
+      `SELECT * FROM discord_bots.deployments 
+       WHERE discord_user_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT $2`,
+      [discordUserId, limit]
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Get the latest successful deployment for a student
+   */
+  async getLatestDeployment(discordUserId: string): Promise<Deployment | null> {
+    const result = await this.pool.query<Deployment>(
+      `SELECT * FROM discord_bots.deployments 
+       WHERE discord_user_id = $1 AND status = 'success' 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [discordUserId]
+    );
+
+    return result.rows.length > 0 ? result.rows[0] : null;
+  }
+
+  /**
+   * Get deployment statistics for a student
+   */
+  async getDeploymentStats(discordUserId: string): Promise<{
+    totalDeployments: number;
+    successfulDeployments: number;
+    failedDeployments: number;
+    averageBuildTime: number | null;
+  }> {
+    const result = await this.pool.query(
+      `SELECT 
+        COUNT(*) as total_deployments,
+        COUNT(*) FILTER (WHERE status = 'success') as successful_deployments,
+        COUNT(*) FILTER (WHERE status = 'failed') as failed_deployments,
+        AVG(build_time_seconds) FILTER (WHERE status = 'success') as average_build_time
+       FROM discord_bots.deployments 
+       WHERE discord_user_id = $1`,
+      [discordUserId]
+    );
+
+    const row = result.rows[0];
+    return {
+      totalDeployments: parseInt(row.total_deployments),
+      successfulDeployments: parseInt(row.successful_deployments),
+      failedDeployments: parseInt(row.failed_deployments),
+      averageBuildTime: row.average_build_time ? parseFloat(row.average_build_time) : null,
+    };
+  }
+
+  /**
+   * Update Giorgi's Vercel session info (project ID and chat ID)
+   */
+  async updateGiorgiVercelSession(
+    discordUserId: string,
+    vercelProjectId: string,
+    vercelChatId: string
+  ): Promise<void> {
+    await this.updateGiorgiProfile(discordUserId, {
+      vercel_project_id: vercelProjectId,
+      vercel_chat_id: vercelChatId,
+    });
+    console.log(`✅ Updated Vercel session for ${discordUserId}`);
   }
 
   /**
