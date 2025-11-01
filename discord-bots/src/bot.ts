@@ -338,9 +338,31 @@ export class DiscordBot {
         );
 
         // Update student profile if updates provided
-        if (data.profileUpdates) {
+        // Support both camelCase (profileUpdates) and snake_case (profile_updates)
+        const profileUpdates = data.profileUpdates || (data as any).profile_updates;
+        
+        if (profileUpdates) {
           console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
-          await this.db.updateStudentProfile(data.userId, data.profileUpdates, this.botName);
+          await this.db.updateStudentProfile(data.userId, profileUpdates, this.botName);
+        }
+
+        // Save deployment if this was a deployment response (Giorgi only)
+        if (this.botName === 'giorgi' && data.deploymentId && data.webUrl) {
+          console.log(`📦 Saving deployment record...`);
+          try {
+            await this.db.saveDeployment(data.userId, data.webUrl, {
+              featureDescription: profileUpdates?.current_project || profileUpdates?.project_description || 'Deployment',
+              userPrompt: undefined, // Could add this to callback if needed
+              deploymentId: data.deploymentId,
+              vercelChatId: profileUpdates?.vercel_chat_id,
+              status: profileUpdates?.deployment_status === 'success' ? 'success' : 'failed',
+              errorMessage: profileUpdates?.deployment_status === 'failed' ? 'Deployment failed' : undefined,
+              buildTimeSeconds: undefined // Could calculate this if we track start time
+            });
+            console.log(`✅ Deployment saved to database`);
+          } catch (deployError) {
+            console.warn('⚠️ Could not save deployment record:', deployError);
+          }
         }
 
         console.log(`✅ Async response saved to database`);
