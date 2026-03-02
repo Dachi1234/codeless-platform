@@ -3,6 +3,8 @@ import { config, SingleBotConfig } from './config';
 import { DatabaseService } from './services/database.service';
 import { N8nService } from './services/n8n.service';
 
+const DISCORD_MAX_LENGTH = 2000;
+
 export class DiscordBot {
   private client: Client;
   private db: DatabaseService;
@@ -32,6 +34,103 @@ export class DiscordBot {
     this.client.on('ready', () => this.onReady());
     this.client.on('messageCreate', (message) => this.onMessage(message));
     this.client.on('error', (error) => this.onError(error));
+  }
+
+  /**
+   * Split a long message into chunks that fit Discord's 2000 char limit.
+   * Tries to split at newlines first, then at spaces, then hard-cuts.
+   */
+  private splitMessage(text: string, maxLength: number = DISCORD_MAX_LENGTH): string[] {
+    if (text.length <= maxLength) return [text];
+
+    const chunks: string[] = [];
+    let remaining = text;
+
+    while (remaining.length > 0) {
+      if (remaining.length <= maxLength) {
+        chunks.push(remaining);
+        break;
+      }
+
+      let splitIndex = -1;
+
+      // Try to split at a double newline (paragraph break)
+      const doubleNewline = remaining.lastIndexOf('\n\n', maxLength);
+      if (doubleNewline > maxLength * 0.3) {
+        splitIndex = doubleNewline + 2; // include the newlines in the first chunk
+      }
+
+      // Try single newline
+      if (splitIndex === -1) {
+        const singleNewline = remaining.lastIndexOf('\n', maxLength);
+        if (singleNewline > maxLength * 0.3) {
+          splitIndex = singleNewline + 1;
+        }
+      }
+
+      // Try space
+      if (splitIndex === -1) {
+        const space = remaining.lastIndexOf(' ', maxLength);
+        if (space > maxLength * 0.3) {
+          splitIndex = space + 1;
+        }
+      }
+
+      // Hard cut as last resort
+      if (splitIndex === -1) {
+        splitIndex = maxLength;
+      }
+
+      chunks.push(remaining.substring(0, splitIndex).trimEnd());
+      remaining = remaining.substring(splitIndex).trimStart();
+    }
+
+    return chunks.filter(c => c.length > 0);
+  }
+
+  /**
+   * Send a message to a channel, splitting into multiple messages if needed.
+   * Returns the last message sent (for DB tracking).
+   */
+  private async sendLongMessage(
+    channel: { send: (content: string) => Promise<Message> },
+    text: string
+  ): Promise<Message> {
+    const chunks = this.splitMessage(text);
+    let lastMessage: Message | null = null;
+
+    for (const chunk of chunks) {
+      lastMessage = await channel.send(chunk);
+    }
+
+    if (chunks.length > 1) {
+      console.log(`📨 Split message into ${chunks.length} parts (total ${text.length} chars)`);
+    }
+
+    return lastMessage!;
+  }
+
+  /**
+   * Reply to a message, splitting into multiple messages if needed.
+   * First chunk is a reply, rest are follow-up sends.
+   */
+  private async replyLongMessage(message: Message, text: string): Promise<Message> {
+    const chunks = this.splitMessage(text);
+    let lastMessage: Message | null = null;
+
+    for (let i = 0; i < chunks.length; i++) {
+      if (i === 0) {
+        lastMessage = await message.reply(chunks[i]);
+      } else {
+        lastMessage = await message.channel.send(chunks[i]);
+      }
+    }
+
+    if (chunks.length > 1) {
+      console.log(`📨 Split reply into ${chunks.length} parts (total ${text.length} chars)`);
+    }
+
+    return lastMessage!;
   }
 
   /**
@@ -173,7 +272,7 @@ export class DiscordBot {
         // ✅ Sync pattern: n8n responded immediately, send it now
         console.log(`✅ Sync response received, sending to Discord`);
         
-        const botMessage = await message.reply(n8nResponse.response);
+        const botMessage = await this.replyLongMessage(message, n8nResponse.response);
 
         // Try to save agent message and profile updates (if database is available)
         try {
@@ -287,7 +386,10 @@ export class DiscordBot {
         return;
       }
       
-      const botMessage = await channel.send(responseText);
+      const botMessage = await this.sendLongMessage(
+        channel as any,
+        responseText
+      );
 
       console.log(`✅ Async response sent to Discord channel ${data.channelId}`);
 
