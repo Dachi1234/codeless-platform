@@ -324,6 +324,12 @@ export class DatabaseService {
       notes?: string;
     }
   ): Promise<void> {
+    // Clamp numeric values to 1-10 range (DB has CHECK constraints)
+    const clamp = (val: number | undefined): number | undefined => {
+      if (val === undefined) return undefined;
+      return Math.max(1, Math.min(10, Math.round(val)));
+    };
+
     const client = await this.pool.connect();
     try {
       const setParts: string[] = [];
@@ -332,12 +338,12 @@ export class DatabaseService {
 
       if (updates.tension_level !== undefined) {
         setParts.push(`tension_level = $${paramIndex++}`);
-        values.push(updates.tension_level);
+        values.push(clamp(updates.tension_level));
       }
 
       if (updates.trust_level !== undefined) {
         setParts.push(`trust_level = $${paramIndex++}`);
-        values.push(updates.trust_level);
+        values.push(clamp(updates.trust_level));
       }
 
       if (updates.last_milestone !== undefined) {
@@ -400,6 +406,12 @@ export class DatabaseService {
       deployment_status?: string;
     }
   ): Promise<void> {
+    // Clamp numeric values to 1-10 range (DB has CHECK constraints)
+    const clamp = (val: number | undefined): number | undefined => {
+      if (val === undefined) return undefined;
+      return Math.max(1, Math.min(10, Math.round(val)));
+    };
+
     const client = await this.pool.connect();
     try {
       const setParts: string[] = [];
@@ -408,22 +420,22 @@ export class DatabaseService {
 
       if (updates.tension_level !== undefined) {
         setParts.push(`tension_level = $${paramIndex++}`);
-        values.push(updates.tension_level);
+        values.push(clamp(updates.tension_level));
       }
 
       if (updates.trust_level !== undefined) {
         setParts.push(`trust_level = $${paramIndex++}`);
-        values.push(updates.trust_level);
+        values.push(clamp(updates.trust_level));
       }
 
       if (updates.tech_respect !== undefined) {
         setParts.push(`tech_respect = $${paramIndex++}`);
-        values.push(updates.tech_respect);
+        values.push(clamp(updates.tech_respect));
       }
 
       if (updates.code_quality !== undefined) {
         setParts.push(`code_quality = $${paramIndex++}`);
-        values.push(updates.code_quality);
+        values.push(clamp(updates.code_quality));
       }
 
       if (updates.current_stack !== undefined) {

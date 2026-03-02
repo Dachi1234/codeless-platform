@@ -342,8 +342,13 @@ export class DiscordBot {
         const profileUpdates = data.profileUpdates || (data as any).profile_updates;
         
         if (profileUpdates) {
-          console.log(`📝 Updating student profile with ${this.botName}'s observations...`);
-          await this.db.updateStudentProfile(data.userId, profileUpdates, this.botName);
+          console.log(`📝 Updating student profile with ${this.botName}'s observations:`, JSON.stringify(profileUpdates));
+          try {
+            await this.db.updateStudentProfile(data.userId, profileUpdates, this.botName);
+            console.log(`✅ Profile update saved successfully`);
+          } catch (profileError) {
+            console.error(`❌ Failed to save profile updates:`, profileError);
+          }
         }
 
         // Save deployment if this was a deployment response (Giorgi only)
