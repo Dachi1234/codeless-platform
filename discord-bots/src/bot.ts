@@ -353,6 +353,8 @@ export class DiscordBot {
     agentName: string;
     response: string;
     profileUpdates?: any;
+    memories?: Array<{ memory_type: string; content: string; importance?: number }>;
+    emotionTrigger?: string;
     webUrl?: string;
     deploymentId?: string;
   }): Promise<void> {
@@ -469,6 +471,30 @@ export class DiscordBot {
             console.log(`✅ Deployment saved to database`);
           } catch (deployError) {
             console.warn('⚠️ Could not save deployment record:', deployError);
+          }
+        }
+
+        // Save memories if provided
+        const memories = data.memories || (data as any).memories;
+        if (memories && Array.isArray(memories) && memories.length > 0) {
+          try {
+            await this.db.saveMemories(data.userId, this.botName, memories);
+          } catch (memError) {
+            console.warn('⚠️ Could not save memories:', memError);
+          }
+        }
+
+        // Save emotion snapshot if profile had emotional changes
+        if (profileUpdates && (profileUpdates.tension_level || profileUpdates.trust_level || profileUpdates.tech_respect)) {
+          try {
+            await this.db.saveEmotionSnapshot(data.userId, this.botName, {
+              tension_level: profileUpdates.tension_level,
+              trust_level: profileUpdates.trust_level,
+              tech_respect: profileUpdates.tech_respect,
+              trigger: data.emotionTrigger || (data as any).emotion_trigger || null,
+            });
+          } catch (emotionError) {
+            console.warn('⚠️ Could not save emotion snapshot:', emotionError);
           }
         }
 

@@ -87,6 +87,30 @@ export interface Deployment {
   createdAt: Date;
 }
 
+export interface AgentMemory {
+  id: number;
+  discordUserId: string;
+  agentName: string;
+  memoryType: 'fact' | 'observation' | 'promise' | 'preference' | 'milestone' | 'frustration' | 'context';
+  content: string;
+  importance: number;
+  triggerMessage: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EmotionSnapshot {
+  id: number;
+  discordUserId: string;
+  agentName: string;
+  tensionLevel: number | null;
+  trustLevel: number | null;
+  techRespect: number | null;
+  trigger: string | null;
+  createdAt: Date;
+}
+
 export class DatabaseService {
   private pool: Pool;
 
@@ -728,6 +752,241 @@ export class DatabaseService {
       vercel_chat_id: vercelChatId,
     });
     console.log(`✅ Updated Vercel session for ${discordUserId}`);
+  }
+
+  // ===========================================================================
+  // Agent Memories
+  // ===========================================================================
+
+  /**
+   * Save a new memory for an agent about a student
+   */
+  async saveMemory(
+    discordUserId: string,
+    agentName: string,
+    memory: {
+      memory_type: string;
+      content: string;
+      importance?: number;
+      trigger_message?: string;
+    }
+  ): Promise<AgentMemory> {
+    const clampImportance = (val: number | undefined): number => {
+      if (val === undefined) return 5;
+      return Math.max(1, Math.min(10, Math.round(val)));
+    };
+
+    const result = await this.pool.query<AgentMemory>(
+      `INSERT INTO discord_bots.agent_memories
+       (discord_user_id, agent_name, memory_type, content, importance, trigger_message)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        discordUserId,
+        agentName,
+        memory.memory_type,
+        memory.content,
+        clampImportance(memory.importance),
+        memory.trigger_message || null,
+      ]
+    );
+
+    console.log(`🧠 Saved ${memory.memory_type} memory for ${agentName}→${discordUserId}: "${memory.content.substring(0, 60)}..."`);
+    return result.rows[0];
+  }
+
+  /**
+   * Save multiple memories at once (batch insert)
+   */
+  async saveMemories(
+    discordUserId: string,
+    agentName: string,
+    memories: Array<{
+      memory_type: string;
+      content: string;
+      importance?: number;
+      trigger_message?: string;
+    }>
+  ): Promise<void> {
+    if (!memories || memories.length === 0) return;
+
+    const clampImportance = (val: number | undefined): number => {
+      if (val === undefined) return 5;
+      return Math.max(1, Math.min(10, Math.round(val)));
+    };
+
+    const client = await this.pool.connect();
+    try {
+      for (const memory of memories) {
+        await client.query(
+          `INSERT INTO discord_bots.agent_memories
+           (discord_user_id, agent_name, memory_type, content, importance, trigger_message)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            discordUserId,
+            agentName,
+            memory.memory_type,
+            memory.content,
+            clampImportance(memory.importance),
+            memory.trigger_message || null,
+          ]
+        );
+      }
+      console.log(`🧠 Saved ${memories.length} memories for ${agentName}→${discordUserId}`);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get active memories for a student from a specific agent.
+   * Returns high-importance memories first.
+   * minImportance: only return memories with importance >= this value (default 1 = all)
+   */
+  async getMemories(
+    discordUserId: string,
+    agentName: string,
+    options: {
+      minImportance?: number;
+      memoryType?: string;
+      limit?: number;
+    } = {}
+  ): Promise<AgentMemory[]> {
+    const { minImportance = 1, memoryType, limit = 50 } = options;
+
+    let query = `
+      SELECT * FROM discord_bots.agent_memories
+      WHERE discord_user_id = $1
+        AND agent_name = $2
+        AND is_active = true
+        AND importance >= $3
+    `;
+    const values: any[] = [discordUserId, agentName, minImportance];
+    let paramIndex = 4;
+
+    if (memoryType) {
+      query += ` AND memory_type = $${paramIndex++}`;
+      values.push(memoryType);
+    }
+
+    query += ` ORDER BY importance DESC, created_at DESC LIMIT $${paramIndex}`;
+    values.push(limit);
+
+    const result = await this.pool.query<AgentMemory>(query, values);
+    return result.rows;
+  }
+
+  /**
+   * Deactivate (soft-delete) a memory
+   */
+  async deactivateMemory(memoryId: number): Promise<void> {
+    await this.pool.query(
+      `UPDATE discord_bots.agent_memories SET is_active = false WHERE id = $1`,
+      [memoryId]
+    );
+  }
+
+  // ===========================================================================
+  // Emotion History
+  // ===========================================================================
+
+  /**
+   * Save an emotion snapshot (called after every profile update)
+   */
+  async saveEmotionSnapshot(
+    discordUserId: string,
+    agentName: string,
+    snapshot: {
+      tension_level?: number;
+      trust_level?: number;
+      tech_respect?: number;
+      trigger?: string;
+    }
+  ): Promise<void> {
+    const clamp = (val: number | undefined): number | null => {
+      if (val === undefined) return null;
+      return Math.max(1, Math.min(10, Math.round(val)));
+    };
+
+    await this.pool.query(
+      `INSERT INTO discord_bots.emotion_history
+       (discord_user_id, agent_name, tension_level, trust_level, tech_respect, trigger)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        discordUserId,
+        agentName,
+        clamp(snapshot.tension_level),
+        clamp(snapshot.trust_level),
+        clamp(snapshot.tech_respect),
+        snapshot.trigger || null,
+      ]
+    );
+
+    console.log(`📊 Emotion snapshot saved for ${agentName}→${discordUserId}`);
+  }
+
+  /**
+   * Get emotion timeline for a student (recent snapshots)
+   */
+  async getEmotionTimeline(
+    discordUserId: string,
+    agentName: string,
+    limit: number = 20
+  ): Promise<EmotionSnapshot[]> {
+    const result = await this.pool.query<EmotionSnapshot>(
+      `SELECT * FROM discord_bots.emotion_history
+       WHERE discord_user_id = $1 AND agent_name = $2
+       ORDER BY created_at DESC
+       LIMIT $3`,
+      [discordUserId, agentName, limit]
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Get emotion summary — latest + trend info
+   */
+  async getEmotionSummary(
+    discordUserId: string,
+    agentName: string
+  ): Promise<{
+    latest: EmotionSnapshot | null;
+    avgTension: number | null;
+    avgTrust: number | null;
+    snapshotCount: number;
+  }> {
+    // Get latest snapshot
+    const latestResult = await this.pool.query<EmotionSnapshot>(
+      `SELECT * FROM discord_bots.emotion_history
+       WHERE discord_user_id = $1 AND agent_name = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [discordUserId, agentName]
+    );
+
+    // Get averages over last 10 interactions
+    const avgResult = await this.pool.query(
+      `SELECT
+        AVG(tension_level) as avg_tension,
+        AVG(trust_level) as avg_trust,
+        COUNT(*) as snapshot_count
+       FROM (
+         SELECT tension_level, trust_level
+         FROM discord_bots.emotion_history
+         WHERE discord_user_id = $1 AND agent_name = $2
+         ORDER BY created_at DESC
+         LIMIT 10
+       ) recent`,
+      [discordUserId, agentName]
+    );
+
+    const avg = avgResult.rows[0];
+    return {
+      latest: latestResult.rows[0] || null,
+      avgTension: avg.avg_tension ? parseFloat(avg.avg_tension) : null,
+      avgTrust: avg.avg_trust ? parseFloat(avg.avg_trust) : null,
+      snapshotCount: parseInt(avg.snapshot_count),
+    };
   }
 
   /**
