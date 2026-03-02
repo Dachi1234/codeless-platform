@@ -121,8 +121,8 @@ export class DiscordBot {
     for (let i = 0; i < chunks.length; i++) {
       if (i === 0) {
         lastMessage = await message.reply(chunks[i]);
-      } else {
-        lastMessage = await message.channel.send(chunks[i]);
+      } else if ('send' in message.channel) {
+        lastMessage = await (message.channel as any).send(chunks[i]);
       }
     }
 
