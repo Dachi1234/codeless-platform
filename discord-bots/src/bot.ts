@@ -355,6 +355,7 @@ export class DiscordBot {
     profileUpdates?: any;
     memories?: Array<{ memory_type: string; content: string; importance?: number }>;
     emotionTrigger?: string;
+    originalMessage?: string;
     webUrl?: string;
     deploymentId?: string;
   }): Promise<void> {
@@ -478,7 +479,12 @@ export class DiscordBot {
         const memories = data.memories || (data as any).memories;
         if (memories && Array.isArray(memories) && memories.length > 0) {
           try {
-            await this.db.saveMemories(data.userId, this.botName, memories);
+            // Attach the original student message as trigger_message if not already set
+            const enrichedMemories = memories.map((m: any) => ({
+              ...m,
+              trigger_message: m.trigger_message || data.originalMessage || null,
+            }));
+            await this.db.saveMemories(data.userId, this.botName, enrichedMemories);
           } catch (memError) {
             console.warn('⚠️ Could not save memories:', memError);
           }
