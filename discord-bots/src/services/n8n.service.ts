@@ -8,6 +8,7 @@ export interface N8nRequest {
   userId: string;
   username: string;
   message: string;
+  messageId: string;
   conversationContext: {
     sender: string;
     content: string;
@@ -63,6 +64,7 @@ export class N8nService {
     userId: string,
     username: string,
     message: string,
+    messageId: string,
     conversationHistory: Message[],
     studentProfile?: any
   ): Promise<N8nResponse> {
@@ -83,6 +85,7 @@ export class N8nService {
         userId,
         username,
         message,
+        messageId,
         conversationContext,
         studentProfile, // Include agent-specific profile
       };

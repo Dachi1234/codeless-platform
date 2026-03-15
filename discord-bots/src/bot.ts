@@ -252,6 +252,7 @@ export class DiscordBot {
         message.author.id,
         message.author.username,
         message.content,
+        message.id,
         conversationHistory,
         agentProfile
       );
@@ -356,6 +357,8 @@ export class DiscordBot {
     memories?: Array<{ memory_type: string; content: string; importance?: number }>;
     emotionTrigger?: string;
     originalMessage?: string;
+    reactions?: string[];
+    messageId?: string;
     webUrl?: string;
     deploymentId?: string;
   }): Promise<void> {
@@ -395,6 +398,20 @@ export class DiscordBot {
       );
 
       console.log(`✅ Async response sent to Discord channel ${data.channelId}`);
+
+      // Add emoji reactions to the original PM message
+      const reactions = data.reactions || [];
+      if (reactions.length > 0 && data.messageId) {
+        try {
+          const originalMsg = await channel.messages.fetch(data.messageId);
+          for (const emoji of reactions.slice(0, 3)) {
+            await originalMsg.react(emoji);
+          }
+          console.log(`😀 Added reactions ${reactions.join(' ')} to message ${data.messageId}`);
+        } catch (reactError) {
+          console.warn('⚠️ Could not add reactions:', reactError);
+        }
+      }
 
       // Save to database
       try {
