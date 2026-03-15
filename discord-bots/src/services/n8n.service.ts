@@ -173,6 +173,7 @@ export class N8nService {
         userId: 'test-user',
         username: 'Test User',
         message: 'Hello! This is a test message.',
+        messageId: 'test-message-id',
         conversationContext: [],
       };
 
