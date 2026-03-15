@@ -260,13 +260,8 @@ export class DiscordBot {
       // Check which pattern n8n used
       if (n8nResponse.acknowledged) {
         // ⏳ Async pattern: n8n is processing, will send callback later
-        try {
-          await message.react('⏳');
-          console.log(`⏳ Async processing started for message from ${message.author.username}`);
-          console.log(`   Response will be sent via webhook callback when ready`);
-        } catch (reactionError) {
-          console.warn('⚠️ Could not add loading reaction:', reactionError);
-        }
+        console.log(`⏳ Async processing started for message from ${message.author.username}`);
+        console.log(`   Response will be sent via webhook callback when ready`);
         // The actual response will come via webhook callback (see handleAsyncResponse method)
         
       } else if (n8nResponse.response) {
